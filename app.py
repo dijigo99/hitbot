@@ -37,7 +37,12 @@ socketio = SocketIO(
 )
 
 # Load environment variables
-load_dotenv()
+try:
+    load_dotenv()
+    print("Environment variables loaded from .env file")
+except Exception as e:
+    print(f"Could not load .env file: {e}")
+    print("Using default environment variables")
 
 # Global variables
 stop_event = threading.Event()
@@ -889,14 +894,18 @@ def handle_update_profile_settings(data):
         user_profile.default_profile = data['default_profile']
     
     # .env dosyasında da güncelle
-    with open('.env', 'r') as f:
-        env_content = f.read()
-    
-    env_content = re.sub(r'USE_RANDOM_PROFILE=.*', f'USE_RANDOM_PROFILE={str(user_profile.use_random_profile).lower()}', env_content)
-    env_content = re.sub(r'DEFAULT_PROFILE=.*', f'DEFAULT_PROFILE={user_profile.default_profile}', env_content)
-    
-    with open('.env', 'w') as f:
-        f.write(env_content)
+    try:
+        with open('.env', 'r') as f:
+            env_content = f.read()
+        
+        env_content = re.sub(r'USE_RANDOM_PROFILE=.*', f'USE_RANDOM_PROFILE={str(user_profile.use_random_profile).lower()}', env_content)
+        env_content = re.sub(r'DEFAULT_PROFILE=.*', f'DEFAULT_PROFILE={user_profile.default_profile}', env_content)
+        
+        with open('.env', 'w') as f:
+            f.write(env_content)
+    except Exception as e:
+        log_message(f".env dosyası güncellenirken hata: {e}", "#ffcc8c")
+        log_message("Bu normal bir durum olabilir, ayarlar geçici olarak kaydedildi.", "#ffcc8c")
     
     log_message("Profil ayarları güncellendi", "#8cffa0")
 
@@ -941,17 +950,21 @@ def handle_save_behavior_settings(data):
             user_behavior.click_type_weights[ClickType.EXTERNAL_LINK] = int(data['weight_external_link'])
         
         # .env dosyasında da güncelle
-        with open('.env', 'r') as f:
-            env_content = f.read()
-        
-        env_content = re.sub(r'MIN_TIME_ON_SITE=.*', f'MIN_TIME_ON_SITE={user_behavior.min_time_on_site}', env_content)
-        env_content = re.sub(r'MAX_TIME_ON_SITE=.*', f'MAX_TIME_ON_SITE={user_behavior.max_time_on_site}', env_content)
-        env_content = re.sub(r'WEIGHT_DIRECT_CLICK=.*', f'WEIGHT_DIRECT_CLICK={user_behavior.click_type_weights[ClickType.DIRECT]}', env_content)
-        env_content = re.sub(r'WEIGHT_GOOGLE_REFERRAL=.*', f'WEIGHT_GOOGLE_REFERRAL={user_behavior.click_type_weights[ClickType.GOOGLE_REFERRAL]}', env_content)
-        env_content = re.sub(r'WEIGHT_EXTERNAL_LINK=.*', f'WEIGHT_EXTERNAL_LINK={user_behavior.click_type_weights[ClickType.EXTERNAL_LINK]}', env_content)
-        
-        with open('.env', 'w') as f:
-            f.write(env_content)
+        try:
+            with open('.env', 'r') as f:
+                env_content = f.read()
+            
+            env_content = re.sub(r'MIN_TIME_ON_SITE=.*', f'MIN_TIME_ON_SITE={user_behavior.min_time_on_site}', env_content)
+            env_content = re.sub(r'MAX_TIME_ON_SITE=.*', f'MAX_TIME_ON_SITE={user_behavior.max_time_on_site}', env_content)
+            env_content = re.sub(r'WEIGHT_DIRECT_CLICK=.*', f'WEIGHT_DIRECT_CLICK={user_behavior.click_type_weights[ClickType.DIRECT]}', env_content)
+            env_content = re.sub(r'WEIGHT_GOOGLE_REFERRAL=.*', f'WEIGHT_GOOGLE_REFERRAL={user_behavior.click_type_weights[ClickType.GOOGLE_REFERRAL]}', env_content)
+            env_content = re.sub(r'WEIGHT_EXTERNAL_LINK=.*', f'WEIGHT_EXTERNAL_LINK={user_behavior.click_type_weights[ClickType.EXTERNAL_LINK]}', env_content)
+            
+            with open('.env', 'w') as f:
+                f.write(env_content)
+        except Exception as e:
+            log_message(f".env dosyası güncellenirken hata: {e}", "#ffcc8c")
+            log_message("Bu normal bir durum olabilir, ayarlar geçici olarak kaydedildi.", "#ffcc8c")
         
         log_message("Davranış ayarları güncellendi", "#8cffa0")
         
@@ -972,18 +985,22 @@ def handle_add_external_referrer(data):
         user_behavior.external_referrers.append(referrer)
         
         # .env dosyasında da güncelle
-        with open('.env', 'r') as f:
-            env_content = f.read()
-        
-        # Mevcut EXTERNAL_REFERRERS değerini al veya oluştur
-        referrers_str = ','.join(user_behavior.external_referrers)
-        if 'EXTERNAL_REFERRERS=' in env_content:
-            env_content = re.sub(r'EXTERNAL_REFERRERS=.*', f'EXTERNAL_REFERRERS={referrers_str}', env_content)
-        else:
-            env_content += f'\nEXTERNAL_REFERRERS={referrers_str}'
-        
-        with open('.env', 'w') as f:
-            f.write(env_content)
+        try:
+            with open('.env', 'r') as f:
+                env_content = f.read()
+            
+            # Mevcut EXTERNAL_REFERRERS değerini al veya oluştur
+            referrers_str = ','.join(user_behavior.external_referrers)
+            if 'EXTERNAL_REFERRERS=' in env_content:
+                env_content = re.sub(r'EXTERNAL_REFERRERS=.*', f'EXTERNAL_REFERRERS={referrers_str}', env_content)
+            else:
+                env_content += f'\nEXTERNAL_REFERRERS={referrers_str}'
+            
+            with open('.env', 'w') as f:
+                f.write(env_content)
+        except Exception as e:
+            log_message(f".env dosyası güncellenirken hata: {e}", "#ffcc8c")
+            log_message("Bu normal bir durum olabilir, ayarlar geçici olarak kaydedildi.", "#ffcc8c")
         
         log_message(f"Referrer eklendi: {referrer}", "#8cffa0")
     else:
@@ -1004,15 +1021,19 @@ def handle_remove_external_referrer(data):
         user_behavior.external_referrers.remove(referrer)
         
         # .env dosyasında da güncelle
-        with open('.env', 'r') as f:
-            env_content = f.read()
-        
-        # Mevcut EXTERNAL_REFERRERS değerini güncelle
-        referrers_str = ','.join(user_behavior.external_referrers)
-        env_content = re.sub(r'EXTERNAL_REFERRERS=.*', f'EXTERNAL_REFERRERS={referrers_str}', env_content)
-        
-        with open('.env', 'w') as f:
-            f.write(env_content)
+        try:
+            with open('.env', 'r') as f:
+                env_content = f.read()
+            
+            # Mevcut EXTERNAL_REFERRERS değerini güncelle
+            referrers_str = ','.join(user_behavior.external_referrers)
+            env_content = re.sub(r'EXTERNAL_REFERRERS=.*', f'EXTERNAL_REFERRERS={referrers_str}', env_content)
+            
+            with open('.env', 'w') as f:
+                f.write(env_content)
+        except Exception as e:
+            log_message(f".env dosyası güncellenirken hata: {e}", "#ffcc8c")
+            log_message("Bu normal bir durum olabilir, ayarlar geçici olarak kaydedildi.", "#ffcc8c")
         
         log_message(f"Referrer silindi: {referrer}", "#8cffa0")
     else:

@@ -1,7 +1,21 @@
+# Python caches
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Virtual environment
 venv/
 env/
-.env
+
+# Logs 
 *.log
+
+# IDE files
+.vscode/
+.idea/
+
+# Local files
+.env
+*.db
+logs/
+cookies.json

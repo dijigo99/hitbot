@@ -6,7 +6,12 @@ from enum import Enum
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+try:
+    load_dotenv()
+    print("Environment variables loaded from .env file in behavior.py")
+except Exception as e:
+    print(f"Could not load .env file in behavior.py: {e}")
+    print("Using default environment variables in behavior.py")
 
 class ClickType(Enum):
     """Types of click behaviors."""
