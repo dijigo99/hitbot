@@ -36,3 +36,10 @@
 2025-05-07 21:40:44,249 - hitbot - INFO - Logging başlatıldı
 2025-05-07 21:45:53,397 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 33.28s - Success: True
 2025-05-07 22:42:54,318 - hitbot - INFO - Logging başlatıldı
+2025-05-07 23:58:18,744 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 7.62s - Success: False - Error: Google araması başarısız oldu
+2025-05-07 23:58:27,980 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 9.22s - Success: False - Error: Google araması başarısız oldu
+2025-05-07 23:58:35,987 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 7.99s - Success: False - Error: Google araması başarısız oldu
+2025-05-08 00:13:26,327 - hitbot - INFO - Logging başlatıldı
+2025-05-08 00:14:16,099 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 5.45s - Success: False - Error: Google araması başarısız oldu
+2025-05-08 00:14:20,305 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 4.20s - Success: False - Error: Google araması başarısız oldu
+2025-05-08 00:14:23,542 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 3.23s - Success: False - Error: Google araması başarısız oldu

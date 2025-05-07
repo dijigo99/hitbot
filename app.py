@@ -125,15 +125,33 @@ def save_cookies(cookies):
     return cookie_checker.save_cookies(cookies)
 
 def load_proxies():
-    """Load proxies from proxies.txt file"""
+    """Load proxies from proxies.txt and webshareproxies.txt files"""
+    proxies = []
+    
+    # Önce normal proxies.txt dosyasını kontrol edelim
     try:
         with open('proxies.txt', 'r') as f:
-            proxies = [line.strip() for line in f if line.strip()]
-            log_message(f"{len(proxies)} adet proxy yüklendi", "#8cffa0")
-            return proxies
-    except FileNotFoundError as e:
-        log_message(f"Proxy yükleme hatası: {e}", "#ff8c8c")
-        return []
+            standard_proxies = [line.strip() for line in f if line.strip()]
+            log_message(f"{len(standard_proxies)} adet proxy yüklendi (proxies.txt)", "#8cffa0")
+            proxies.extend(standard_proxies)
+    except FileNotFoundError:
+        log_message("proxies.txt bulunamadı, webshare proxyleri kontrol ediliyor", "#ffcc8c")
+    
+    # Webshare proxies'i kontrol edelim
+    try:
+        with open('webshareproxies.txt', 'r') as f:
+            webshare_proxies = [line.strip() for line in f if line.strip()]
+            log_message(f"{len(webshare_proxies)} adet Webshare proxy yüklendi (webshareproxies.txt)", "#8cffa0")
+            proxies.extend(webshare_proxies)
+    except FileNotFoundError:
+        log_message("webshareproxies.txt bulunamadı", "#ffcc8c")
+    
+    if not proxies:
+        log_message("Hiç proxy bulunamadı! Lütfen proxy ekleyin veya 'Doğrudan Bağlantı' ayarını aktifleştirin.", "#ff8c8c")
+    else:
+        log_message(f"Toplam {len(proxies)} adet proxy yüklendi", "#8cffa0")
+    
+    return proxies
 
 def save_proxies(proxies):
     """Save proxies to proxies.txt file"""
@@ -191,20 +209,36 @@ def save_keywords(keywords):
 def test_proxy(proxy, timeout=5):
     """Test if a proxy is working"""
     try:
+        # Webshare formatını kontrol et (IP:PORT:USERNAME:PASSWORD)
+        parts = proxy.split(':')
+        
+        if len(parts) == 4:  # Webshare formatı (IP:PORT:USERNAME:PASSWORD)
+            ip, port, username, password = parts
+            formatted_proxy = f"http://{username}:{password}@{ip}:{port}"
+        elif proxy.startswith('http://') or proxy.startswith('https://'):
+            formatted_proxy = proxy
+        elif proxy.startswith('socks4://') or proxy.startswith('socks5://'):
+            formatted_proxy = proxy
+        else:
+            # Standart IP:PORT formatı - HTTP proxy olarak varsay
+            formatted_proxy = f"http://{proxy}"
+        
         proxies = {
-            'http': proxy,
-            'https': proxy
+            'http': formatted_proxy,
+            'https': formatted_proxy
         }
+        
         # Use a simple test URL
         response = requests.get('http://httpbin.org/ip', 
                                proxies=proxies, 
                                timeout=timeout,
                                verify=False)
         return response.status_code == 200
-    except Exception:
+    except Exception as e:
+        print(f"Proxy test hatası: {e}")
         return False
 
-def get_working_proxies(proxy_list, max_workers=10):
+def get_working_proxies(proxy_list, max_workers=5):
     """Test proxies in parallel and return working ones"""
     working_proxies = []
     
@@ -214,6 +248,9 @@ def get_working_proxies(proxy_list, max_workers=10):
     log_message(f"{len(proxy_list)} proxy test ediliyor...")
     socketio.emit('proxy_test_started', {'count': len(proxy_list)})
     
+    # Proxy testlerini daha güvenilir yapmak için thread sayısını azaltalım
+    max_workers = min(max_workers, 5)  # En fazla 5 paralel istek
+    
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_proxy = {executor.submit(test_proxy, proxy): proxy for proxy in proxy_list}
         for i, future in enumerate(concurrent.futures.as_completed(future_to_proxy)):
@@ -222,17 +259,39 @@ def get_working_proxies(proxy_list, max_workers=10):
                 is_working = future.result()
                 if is_working:
                     working_proxies.append(proxy)
-                    log_message(f"✓ Çalışan proxy bulundu: {proxy}", "#8cffa0")
+                    
+                    # Kullanıcı dostu proxy gösterimi
+                    if len(proxy.split(':')) == 4:  # Webshare formatı
+                        ip, port, username, _ = proxy.split(':')
+                        display_proxy = f"{ip}:{port} (Webshare)"
+                    else:
+                        display_proxy = proxy
+                        
+                    log_message(f"✓ Çalışan proxy bulundu: {display_proxy}", "#8cffa0")
                     socketio.emit('proxy_test_result', {'proxy': proxy, 'working': True})
                 else:
-                    log_message(f"✕ Çalışmayan proxy: {proxy}", "#ff8c8c")
+                    # Kullanıcı dostu proxy gösterimi
+                    if len(proxy.split(':')) == 4:  # Webshare formatı
+                        ip, port, username, _ = proxy.split(':')
+                        display_proxy = f"{ip}:{port} (Webshare)"
+                    else:
+                        display_proxy = proxy
+                        
+                    log_message(f"✕ Çalışmayan proxy: {display_proxy}", "#ff8c8c")
                     socketio.emit('proxy_test_result', {'proxy': proxy, 'working': False})
             except Exception as e:
-                log_message(f"Proxy test hatası {proxy}: {e}", "#ff8c8c")
+                # Kullanıcı dostu proxy gösterimi
+                if len(proxy.split(':')) == 4:  # Webshare formatı
+                    ip, port, username, _ = proxy.split(':')
+                    display_proxy = f"{ip}:{port} (Webshare)"
+                else:
+                    display_proxy = proxy
+                    
+                log_message(f"Proxy test hatası {display_proxy}: {e}", "#ff8c8c")
                 socketio.emit('proxy_test_result', {'proxy': proxy, 'working': False})
             
-            # Emit progress every 5 proxies
-            if (i+1) % 5 == 0 or i+1 == len(proxy_list):
+            # Emit progress every 3 proxies
+            if (i+1) % 3 == 0 or i+1 == len(proxy_list):
                 log_message(f"{i+1}/{len(proxy_list)} proxy test edildi. {len(working_proxies)} proxy çalışıyor.")
                 
     socketio.emit('proxy_test_completed', {
@@ -257,7 +316,18 @@ def create_session(proxy, user_agent, cookies):
     # Configure proxy if not using direct connection
     if proxy and not USE_DIRECT_CONNECTION:
         try:
-            if proxy.startswith('http://') or proxy.startswith('https://'):
+            # Webshare formatını kontrol et (IP:PORT:USERNAME:PASSWORD)
+            parts = proxy.split(':')
+            
+            if len(parts) == 4:  # Webshare formatı (IP:PORT:USERNAME:PASSWORD)
+                ip, port, username, password = parts
+                formatted_proxy = f"http://{username}:{password}@{ip}:{port}"
+                log_message(f"Webshare proxy formatı algılandı ve dönüştürüldü", "#8cffa0")
+                session.proxies = {
+                    'http': formatted_proxy,
+                    'https': formatted_proxy
+                }
+            elif proxy.startswith('http://') or proxy.startswith('https://'):
                 session.proxies = {
                     'http': proxy,
                     'https': proxy
@@ -267,6 +337,15 @@ def create_session(proxy, user_agent, cookies):
                     'http': proxy,
                     'https': proxy
                 }
+            else:
+                # Standart IP:PORT formatı - HTTP proxy olarak varsay
+                formatted_proxy = f"http://{proxy}"
+                session.proxies = {
+                    'http': formatted_proxy,
+                    'https': formatted_proxy
+                }
+                
+            log_message(f"Proxy ayarlandı: {proxy.split('@')[-1] if '@' in proxy else proxy}", "#8cffa0")
         except Exception as e:
             log_message(f"Proxy kurulum hatası: {e}", "#ff8c8c")
     
@@ -309,7 +388,13 @@ def make_request(proxy, user_agent, cookies, keywords, request_number, total_req
     
     try:
         # Log request start
-        log_message(f"İstek #{request_number}/{total_requests} başlatılıyor...", "#8cffa0")
+        if len(proxy.split(':')) == 4:  # Webshare formatı
+            ip, port, username, _ = proxy.split(':')
+            displayed_proxy = f"{ip}:{port} (Webshare)"
+        else:
+            displayed_proxy = proxy
+            
+        log_message(f"İstek #{request_number}/{total_requests} başlatılıyor... Proxy: {displayed_proxy}", "#8cffa0")
         
         # Zamanlamadan önce insan davranışı gecikme uygula
         delay = user_behavior.wait_before_request()
@@ -329,8 +414,12 @@ def make_request(proxy, user_agent, cookies, keywords, request_number, total_req
         session = create_session(proxy, user_agent, cookies)
         
         # Google araması yaparak hedef siteye gidiş
-        success, found_url = google_search.perform_search(session, keyword)
-        result['search_result'] = found_url
+        try:
+            success, found_url = google_search.perform_search(session, keyword)
+            result['search_result'] = found_url
+        except Exception as e:
+            log_message(f"Google araması sırasında hata: {e}", "#ff8c8c")
+            raise e
         
         if success:
             result['success'] = True
