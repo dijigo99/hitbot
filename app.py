@@ -32,8 +32,8 @@ socketio = SocketIO(
     async_mode='eventlet',     # eventlet kullanarak asenkron modu ayarlıyoruz
     logger=True,               # Socket.IO günlüklerini etkinleştiriyoruz
     engineio_logger=True,      # Engine.IO günlüklerini etkinleştiriyoruz
-    ping_timeout=60,           # Ping zaman aşımını uzatıyoruz
-    ping_interval=25           # Ping aralığını ayarlıyoruz
+    ping_timeout=120,          # Ping zaman aşımını uzatıyoruz (60'tan 120'ye)
+    ping_interval=15           # Ping aralığını kısaltıyoruz (25'ten 15'e)
 )
 
 # Load environment variables
@@ -77,32 +77,44 @@ def index():
 
 @socketio.on('connect')
 def handle_connect():
-    # Send initial configuration to client
-    socketio.emit('init_data', {
-        'target_url': TARGET_URL,
-        'request_count': REQUEST_COUNT,
-        'timeout': TIMEOUT,
-        'use_direct_connection': USE_DIRECT_CONNECTION,
-        'max_proxy_retries': MAX_PROXY_RETRIES,
-        'search_delay': SEARCH_DELAY,
-        'request_delay': REQUEST_DELAY,
-        'randomize_delays': RANDOMIZE_DELAYS,
-        'simulate_user_behavior': SIMULATE_USER_BEHAVIOR
-    })
-    log_message("Kullanıcı arayüzü bağlandı")
-    
-    # Send cookie status to client
-    cookie_status = cookie_checker.get_cookie_summary()
-    socketio.emit('cookie_status', cookie_status)
-    
-    # Send scheduler status
-    schedule_times = scheduler.get_schedule()
-    next_run = scheduler.get_next_run_time()
-    socketio.emit('scheduler_status', {
-        'schedule_times': schedule_times,
-        'next_run': next_run,
-        'is_running': scheduler.running
-    })
+    """When a client connects to the server, send initial data"""
+    try:
+        # Send initial configuration to client
+        socketio.emit('init_data', {
+            'target_url': TARGET_URL,
+            'request_count': REQUEST_COUNT,
+            'timeout': TIMEOUT,
+            'use_direct_connection': USE_DIRECT_CONNECTION,
+            'max_proxy_retries': MAX_PROXY_RETRIES,
+            'search_delay': SEARCH_DELAY,
+            'request_delay': REQUEST_DELAY,
+            'randomize_delays': RANDOMIZE_DELAYS,
+            'simulate_user_behavior': SIMULATE_USER_BEHAVIOR
+        })
+        log_message("Kullanıcı arayüzü bağlandı")
+        
+        # Send cookie status to client
+        try:
+            cookie_status = cookie_checker.get_cookie_summary()
+            socketio.emit('cookie_status', cookie_status)
+        except Exception as e:
+            log_message(f"Cookie bilgisi gönderilirken hata: {e}", "#ffcc8c")
+        
+        # Send scheduler status
+        try:
+            schedule_times = scheduler.get_schedule()
+            next_run = scheduler.get_next_run_time()
+            socketio.emit('scheduler_status', {
+                'schedule_times': schedule_times,
+                'next_run': next_run,
+                'is_running': scheduler.running
+            })
+        except Exception as e:
+            log_message(f"Zamanlayıcı bilgisi gönderilirken hata: {e}", "#ffcc8c")
+            
+    except Exception as e:
+        log_message(f"Bağlantı sırasında beklenmeyen hata: {e}", "#ff8c8c")
+        print(f"Bağlantı hatası: {e}")
 
 def load_cookies():
     """Load cookies from cookies.json file"""
@@ -790,14 +802,19 @@ def handle_import_cookies(data):
 @socketio.on('get_schedule')
 def handle_get_schedule():
     """Handle get schedule event"""
-    times = scheduler.get_schedule()
-    next_run = scheduler.get_next_run_time()
-    
-    socketio.emit('schedule_list', {
-        'times': times,
-        'next_run': next_run,
-        'is_running': scheduler.running
-    })
+    try:
+        times = scheduler.get_schedule()
+        next_run = scheduler.get_next_run_time()
+        
+        socketio.emit('schedule_list', {
+            'times': times,
+            'next_run': next_run,
+            'is_running': scheduler.running
+        })
+        log_message("Zamanlanmış saatler gönderildi", "#8cffa0")
+    except Exception as e:
+        log_message(f"Zamanlanmış saatler gönderilirken hata: {e}", "#ff8c8c")
+        print(f"Zamanlayıcı hatası: {e}")
 
 @socketio.on('add_schedule_time')
 def handle_add_schedule_time(data):
@@ -926,7 +943,12 @@ def handle_get_behavior_settings():
 @socketio.on('get_external_referrers')
 def handle_get_external_referrers():
     """Handle get external referrers event"""
-    socketio.emit('external_referrers', {'referrers': user_behavior.external_referrers})
+    try:
+        socketio.emit('external_referrers', {'referrers': user_behavior.external_referrers})
+        log_message("Harici referrerlar gönderildi", "#8cffa0")
+    except Exception as e:
+        log_message(f"Harici referrerlar gönderilirken hata: {e}", "#ff8c8c")
+        print(f"Harici referrer hatası: {e}")
 
 @socketio.on('save_behavior_settings')
 def handle_save_behavior_settings(data):
@@ -1042,6 +1064,14 @@ def handle_remove_external_referrer(data):
     # Güncellenmiş listeyi gönder
     handle_get_behavior_settings()
 
+# CORS ayarlarını ekleyelim
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
+
 # Main entry point
 if __name__ == '__main__':
     # Başlangıçta zamanlayıcıyı başlat (eğer program ilk kez çalışıyorsa)
@@ -1049,5 +1079,13 @@ if __name__ == '__main__':
         scheduler.start()
         log_message("Zamanlayıcı otomatik olarak başlatıldı", "#8cffa0")
     
-    # Run the app
-    socketio.run(app, host='0.0.0.0', port=int(os.getenv('PORT', 5000))) 
+    # Uygulama ayarları
+    port = int(os.getenv('PORT', 5000))
+    
+    # Render.com üzerinde çalışırken
+    if os.getenv('RENDER', '') == 'true':
+        # Render.com için eventlet kullanarak Socket.io'yu çalıştır
+        socketio.run(app, host='0.0.0.0', port=port, debug=False, use_reloader=False)
+    else:
+        # Geliştirme ortamı için normal başlatma
+        socketio.run(app, host='0.0.0.0', port=port) 

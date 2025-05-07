@@ -523,14 +523,30 @@
             let socket;
             try {
                 // Doğrudan bağlantı yerine tam URL kullanarak bağlanma (CORS sorunlarını önler)
-                const serverUrl = window.location.protocol + '//' + window.location.hostname + ':' + (window.location.port || '5000');
+                const protocol = window.location.protocol;
+                const hostname = window.location.hostname;
+                let port = window.location.port;
+                
+                // Render.com için port ayarlamalarını yapalım
+                // Eğer boş port (443/80) varsa, render.com üzerinde çalışıyoruz demektir
+                if (!port) {
+                    // Production ortamında boş port kullanımı
+                    port = '';
+                } else {
+                    // Geliştirme ortamında port önüne : ekleyelim
+                    port = ':' + port;
+                }
+                
+                const serverUrl = protocol + '//' + hostname + port;
                 console.log('Bağlanılacak Socket.IO URL:', serverUrl);
                 
                 socket = io(serverUrl, {
                     transports: ['websocket', 'polling'],
                     reconnection: true,
-                    reconnectionAttempts: 5,
+                    reconnectionAttempts: 10,
                     reconnectionDelay: 1000,
+                    reconnectionDelayMax: 5000,
+                    timeout: 120000,
                     forceNew: true
                 });
                 
@@ -590,12 +606,28 @@
                 
                 socket.on('connect_error', function(error) {
                     console.error('Socket.io bağlantı hatası:', error);
-                    logMessage('Socket.io bağlantı hatası: ' + error, '#ff8c8c');
+                    logMessage('Socket.io bağlantı hatası: ' + error, "#ff8c8c");
+                    
+                    // Bağlantı hatası durumunda yeniden bağlanma denemesi yapalım
+                    setTimeout(function() {
+                        console.log('Yeniden bağlanmayı deniyoruz...');
+                        logMessage('Yeniden bağlanmayı deniyoruz...', "#ffcc8c");
+                        socket.connect();
+                    }, 5000);
                 });
                 
                 socket.on('disconnect', function(reason) {
                     console.log('Socket.io bağlantısı koptu. Sebep:', reason);
-                    logMessage('Socket.io bağlantısı koptu. Sebep: ' + reason, '#ffcc8c');
+                    logMessage('Socket.io bağlantısı koptu. Sebep: ' + reason, "#ffcc8c");
+                    
+                    // Bağlantı koptuğunda yeniden bağlanma denemesi yapalım
+                    if (reason === 'io server disconnect' || reason === 'transport close') {
+                        setTimeout(function() {
+                            console.log('Bağlantı koptu, yeniden bağlanmayı deniyoruz...');
+                            logMessage('Bağlantı koptu, yeniden bağlanmayı deniyoruz...', "#ffcc8c");
+                            socket.connect();
+                        }, 5000);
+                    }
                 });
                 
                 // Initialize with values from server
@@ -1263,10 +1295,14 @@
                 // Bağlantı kurulduğunda davranış bilgilerini al 
                 socket.on('connect', function() {
                     console.log('Bağlantı kuruldu, davranış ve profil bilgileri isteniyor');
-                    socket.emit('get_behavior_settings');
-                    socket.emit('get_external_referrers');
-                    socket.emit('get_schedule');
-                    socket.emit('get_profile_settings');
+                    
+                    // Render.com'da bağlantı problemlerini önlemek için gecikme ekleyelim
+                    setTimeout(function() {
+                        socket.emit('get_behavior_settings');
+                        socket.emit('get_external_referrers');
+                        socket.emit('get_schedule');
+                        socket.emit('get_profile_settings');
+                    }, 1000);
                 });
                 
                 // Hataları önlemek için başlangıçta Socket.io bağlantısını kontrol et

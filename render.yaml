@@ -3,7 +3,7 @@ services:
     name: request-hit-bot
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --worker-class eventlet --workers 1 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.8.0
@@ -11,3 +11,7 @@ services:
         generateValue: true
       - key: PORT
         value: 5000
+      - key: START_SCHEDULER_ON_BOOT
+        value: "false"
+      - key: RENDER
+        value: "true"
