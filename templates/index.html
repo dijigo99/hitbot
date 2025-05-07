@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <title>155Labs Hitbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 40px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #4a6cf7;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        #logs {
+            height: 300px;
+            overflow-y: auto;
+            background-color: #222;
+            color: #f8f8f8;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #results-container {
+            height: 300px;
+            overflow-y: auto;
+        }
+        .proxy-item {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+        .proxy-working {
+            background-color: #d1e7dd;
+        }
+        .proxy-failed {
+            background-color: #f8d7da;
+        }
+        .request-result {
+            border-left: 5px solid #6c757d;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+        }
+        .request-success {
+            border-left-color: #28a745;
+        }
+        .request-failure {
+            border-left-color: #dc3545;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .progress {
+            height: 20px;
+            margin-bottom: 15px;
+        }
+        .form-text {
+            color: #6c757d;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+        .nav-tabs .nav-link {
+            border-radius: 0.5rem 0.5rem 0 0;
+            margin-right: 5px;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #fff;
+            border-color: #dee2e6 #dee2e6 #fff;
+            font-weight: bold;
+        }
+        .keyword-tag {
+            display: inline-block;
+            background-color: #e9ecef;
+            padding: 0.3rem 0.6rem;
+            margin: 0.2rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+        }
+        .keyword-tag .close {
+            margin-left: 0.5rem;
+            font-size: 1rem;
+            line-height: 0.8;
+            cursor: pointer;
+        }
+        #proxyList {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .tag-container {
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            min-height: 38px;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-md-12 text-center">
+                <h1 class="display-4">155Labs Hit Bot</h1>
+                <p class="lead">Google referanslı ve cookie destekli proxy tabanlı gerçekçi trafik test botu</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-5">
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="true">Temel Ayarlar</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="proxies-tab" data-bs-toggle="tab" data-bs-target="#proxies" type="button" role="tab" aria-controls="proxies" aria-selected="false">Proxy Ayarları</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="keywords-tab" data-bs-toggle="tab" data-bs-target="#keywords" type="button" role="tab" aria-controls="keywords" aria-selected="false">Anahtar Kelimeler</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="cookies-tab" data-bs-toggle="tab" data-bs-target="#cookies" type="button" role="tab" aria-controls="cookies" aria-selected="false">Cookie Ayarları</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="scenario-tab" data-bs-toggle="tab" data-bs-target="#scenario" type="button" role="tab" aria-controls="scenario" aria-selected="false">Google Senaryosu</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="scheduler-tab" data-bs-toggle="tab" data-bs-target="#scheduler" type="button" role="tab" aria-controls="scheduler" aria-selected="false">Zamanlayıcı</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="profiles-tab" data-bs-toggle="tab" data-bs-target="#profiles" type="button" role="tab" aria-controls="profiles" aria-selected="false">Profiller</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="behavior-tab" data-bs-toggle="tab" data-bs-target="#behavior" type="button" role="tab" aria-controls="behavior" aria-selected="false">Davranış</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content card" id="myTabContent">
+                    <!-- Temel Ayarlar -->
+                    <div class="tab-pane fade show active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                        <div class="card-body">
+                            <form id="settingsForm">
+                                <div class="mb-3">
+                                    <label for="targetUrl" class="form-label">Hedef URL</label>
+                                    <input type="url" class="form-control" id="targetUrl" name="targetUrl" placeholder="https://example.com" aria-describedby="targetUrlHelp" required>
+                                    <div id="targetUrlHelp" class="form-text">Ziyaret edilecek hedef web sitesinin tam URL'sini girin (örn: https://seninsiten.com)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="requestCount" class="form-label">İstek Sayısı</label>
+                                    <input type="number" class="form-control" id="requestCount" name="requestCount" min="1" max="100" value="5" aria-describedby="requestCountHelp">
+                                    <div id="requestCountHelp" class="form-text">Gönderilecek toplam istek sayısı (1-100 arası)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="timeout" class="form-label">Zaman Aşımı (saniye)</label>
+                                    <input type="number" class="form-control" id="timeout" name="timeout" min="1" max="60" value="10" aria-describedby="timeoutHelp">
+                                    <div id="timeoutHelp" class="form-text">İsteklerin zaman aşımı süresi saniye cinsinden (1-60 arası)</div>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="useDirectConnection" name="useDirectConnection">
+                                    <label class="form-check-label" for="useDirectConnection">Doğrudan Bağlantı (Proxy Kullanma)</label>
+                                    <div class="form-text">İşaretlendiğinde proxy'ler kullanılmadan doğrudan bağlantı kurulur</div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Proxy Ayarları -->
+                    <div class="tab-pane fade" id="proxies" role="tabpanel" aria-labelledby="proxies-tab">
+                        <div class="card-body">
+                            <form id="proxyForm">
+                                <div class="mb-3">
+                                    <label for="proxyRetries" class="form-label">Maksimum Proxy Deneme Sayısı</label>
+                                    <input type="number" class="form-control" id="proxyRetries" name="proxyRetries" min="1" max="10" value="3" aria-describedby="proxyRetriesHelp">
+                                    <div id="proxyRetriesHelp" class="form-text">Proxy başarısız olduğunda kaç farklı proxy denenecek (1-10 arası)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="proxyInput" class="form-label">Proxy Ekle</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="proxyInput" name="proxyInput" placeholder="http://kullanıcı:şifre@proxy:port" aria-describedby="addProxyBtn">
+                                        <button class="btn btn-primary" type="button" id="addProxyBtn">Ekle</button>
+                                    </div>
+                                    <div class="form-text">
+                                        Desteklenen formatlar:<br>
+                                        - http://proxy:port<br>
+                                        - http://kullanıcı:şifre@proxy:port<br>
+                                        - socks5://proxy:port
+                                    </div>
+                                </div>
+                            </form>
+                            
+                            <div class="mt-4">
+                                <h6>Mevcut Proxy Listesi</h6>
+                                <div id="currentProxiesList" aria-live="polite">
+                                    <p class="text-muted text-center">Yükleniyor...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Anahtar Kelimeler -->
+                    <div class="tab-pane fade" id="keywords" role="tabpanel" aria-labelledby="keywords-tab">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="keywordInput" class="form-label">Anahtar Kelime Ekle</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="keywordInput" name="keywordInput" placeholder="anahtar kelime" aria-describedby="addKeywordBtn">
+                                    <button class="btn btn-primary" type="button" id="addKeywordBtn">Ekle</button>
+                                </div>
+                                <div class="form-text">Her arama için rastgele bir anahtar kelime seçilecektir</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Ekli Anahtar Kelimeler</label>
+                                <div class="tag-container" id="keywordsContainer" aria-live="polite">
+                                    <p class="text-muted text-center">Anahtar kelimeler yüklenirken bekleyin...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cookie Ayarları -->
+                    <div class="tab-pane fade" id="cookies" role="tabpanel" aria-labelledby="cookies-tab">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="cookieNameInput" class="form-label">Cookie Ekle</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="cookieNameInput" name="cookieNameInput" placeholder="Cookie Adı" aria-describedby="cookieValueInput">
+                                </div>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="cookieValueInput" name="cookieValueInput" placeholder="Cookie Değeri" aria-describedby="addCookieBtn">
+                                </div>
+                                <button class="btn btn-primary" type="button" id="addCookieBtn">Ekle</button>
+                                <div class="form-text">Google.com'a gönderilecek cookie'ler</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mevcut Cookie Listesi</label>
+                                <div id="currentCookiesList" class="border rounded p-2 bg-light" style="max-height: 150px; overflow-y: auto;" aria-live="polite">
+                                    <p class="text-muted text-center">Cookie listesi yüklenirken bekleyin...</p>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <button class="btn btn-outline-secondary" type="button" id="importCookiesBtn" aria-label="Cookie'leri İçe Aktar">JSON Dosyasından İçe Aktar</button>
+                                <button class="btn btn-outline-secondary ms-2" type="button" id="exportCookiesBtn" aria-label="Cookie'leri Dışa Aktar">JSON Dosyasına Dışa Aktar</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Google Senaryosu -->
+                    <div class="tab-pane fade" id="scenario" role="tabpanel" aria-labelledby="scenario-tab">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="searchDelay" class="form-label">Arama Gecikmesi (saniye)</label>
+                                <input type="number" class="form-control" id="searchDelay" name="searchDelay" min="0.5" max="30" step="0.5" value="2" aria-describedby="searchDelayHelp">
+                                <div id="searchDelayHelp" class="form-text">Google araması yaptıktan sonra sonuçlara tıklamadan önce bekleme süresi (0.5-30 saniye)</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="requestDelay" class="form-label">İstekler Arası Gecikme (saniye)</label>
+                                <input type="number" class="form-control" id="requestDelay" name="requestDelay" min="1" max="60" step="1" value="3" aria-describedby="requestDelayHelp">
+                                <div id="requestDelayHelp" class="form-text">İki istek arasında geçecek süre (1-60 saniye)</div>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="randomizeDelays" name="randomizeDelays" checked>
+                                <label class="form-check-label" for="randomizeDelays">Gecikmeleri Rastgele Yap</label>
+                                <div class="form-text">İşaretlendiğinde, yukarıdaki gecikme değerleri ±%30 oranında rastgeleleştirilir</div>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="simulateUserBehavior" name="simulateUserBehavior" checked>
+                                <label class="form-check-label" for="simulateUserBehavior">Kullanıcı Davranışını Simüle Et</label>
+                                <div class="form-text">İşaretlendiğinde, gerçek bir kullanıcının sayfa ziyaretini taklit etmek için ek aksiyonlar eklenir</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Zamanlayıcı -->
+                    <div class="tab-pane fade" id="scheduler" role="tabpanel" aria-labelledby="scheduler-tab">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0">Zamanlayıcı Durumu</label>
+                                    <div>
+                                        <button class="btn btn-sm btn-success" id="startSchedulerBtn" type="button" aria-label="Zamanlayıcıyı Başlat">Başlat</button>
+                                        <button class="btn btn-sm btn-danger" id="stopSchedulerBtn" type="button" aria-label="Zamanlayıcıyı Durdur">Durdur</button>
+                                        <button class="btn btn-sm btn-primary" id="runNowBtn" type="button" aria-label="Şimdi Çalıştır">Şimdi Çalıştır</button>
+                                    </div>
+                                </div>
+                                <div class="alert alert-info" id="schedulerStatus" aria-live="polite">
+                                    Zamanlayıcı durumu yükleniyor...
+                                </div>
+                                <div class="form-text">Zamanlayıcı, belirtilen saatlerde otomatik olarak testleri çalıştırır.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="scheduleTimeInput" class="form-label">Zaman Ekle</label>
+                                <div class="input-group">
+                                    <input type="time" class="form-control" id="scheduleTimeInput" name="scheduleTimeInput" aria-describedby="addScheduleTimeBtn">
+                                    <button class="btn btn-primary" type="button" id="addScheduleTimeBtn">Ekle</button>
+                                </div>
+                                <div class="form-text">Testlerin otomatik olarak çalıştırılacağı saatleri ekleyin. (Format: 24 saat - 09:30 gibi)</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Zamanlanmış Saatler</label>
+                                <div class="tag-container" id="scheduleTimesContainer" aria-live="polite">
+                                    <p class="text-muted text-center mb-0">Yükleniyor...</p>
+                                </div>
+                                <div class="form-text">Zamanlayıcı, bu saatlerde otomatik olarak testleri çalıştıracaktır. Saatler sistem saatine göre ayarlanır.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="alert alert-secondary">
+                                    <h6>Zamanlayıcı Hakkında Bilgi</h6>
+                                    <ul class="mb-0">
+                                        <li>Her zaman diliminde belirlenmiş istek sayısı kadar test yapılır.</li>
+                                        <li>Tam saatler belirlemek yerine, daha doğal bir etki için her seferinde biraz farklı saatlerde istekler gönderilir.</li>
+                                        <li>Server yeniden başlatıldığında zamanlayıcı ayarları korunur ama manuel olarak yeniden başlatılması gerekir.</li>
+                                        <li>Testler arka planda çalışır, kullanıcı arayüzünde anlık ilerleme göremezsiniz.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profiller -->
+                    <div class="tab-pane fade" id="profiles" role="tabpanel" aria-labelledby="profiles-tab">
+                        <div class="card-body">
+                            <div class="alert alert-info mb-3">
+                                <strong>Kullanıcı Profilleri</strong><br>
+                                Bu bölümde, isteklerde kullanılacak kullanıcı profilleri hakkında bilgi edinebilirsiniz. Profiller, isteklerin daha gerçekçi görünmesini sağlar.
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="useRandomProfile" name="useRandomProfile" checked>
+                                <label class="form-check-label" for="useRandomProfile">Rastgele Profil Kullan</label>
+                                <div class="form-text">İşaretlendiğinde, her istek için rastgele bir profil seçilir. İşaretli değilse, varsayılan profil kullanılır.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="defaultProfile" class="form-label">Varsayılan Profil</label>
+                                <select class="form-select" id="defaultProfile" name="defaultProfile" aria-describedby="defaultProfileHelp">
+                                    <option value="CHROME_DESKTOP">Chrome - Masaüstü</option>
+                                    <option value="FIREFOX_DESKTOP">Firefox - Masaüstü</option>
+                                    <option value="EDGE_DESKTOP">Edge - Masaüstü</option>
+                                    <option value="CHROME_MOBILE">Chrome - Mobil</option>
+                                    <option value="SAFARI_MOBILE">Safari - Mobil</option>
+                                </select>
+                                <div id="defaultProfileHelp" class="form-text">Rastgele profil kullanımı, isteklerin çeşitliliğini artırarak bot tespitini zorlaştırır.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Mevcut Profiller ve Açıklamaları</label>
+                                <div class="list-group">
+                                    <div class="list-group-item">
+                                        <h6 class="mb-1">Chrome - Masaüstü</h6>
+                                        <p class="mb-1">Windows veya macOS üzerinde Chrome tarayıcı ile gezinen kullanıcı simülasyonu. En yaygın ziyaretçi tipidir.</p>
+                                        <small class="text-muted">User-Agent, kabul edilen içerik türleri, dil tercihleri ve diğer gerçekçi header değerleri içerir.</small>
+                                    </div>
+                                    <div class="list-group-item">
+                                        <h6 class="mb-1">Firefox - Masaüstü</h6>
+                                        <p class="mb-1">Firefox tarayıcı kullanan masaüstü bilgisayar kullanıcısı. Genellikle daha teknik kullanıcılarla ilişkilendirilir.</p>
+                                        <small class="text-muted">DNT (Do Not Track) ayarı ve Firefox'a özgü diğer headerlar içerir.</small>
+                                    </div>
+                                    <div class="list-group-item">
+                                        <h6 class="mb-1">Edge - Masaüstü</h6>
+                                        <p class="mb-1">Microsoft Edge tarayıcı kullanan Windows kullanıcıları. Kurumsal kullanıcılarda yaygındır.</p>
+                                        <small class="text-muted">Edge'e özgü header ve bilgiler içerir.</small>
+                                    </div>
+                                    <div class="list-group-item">
+                                        <h6 class="mb-1">Chrome - Mobil</h6>
+                                        <p class="mb-1">Android telefonlarda Chrome tarayıcı kullanan mobil ziyaretçiler.</p>
+                                        <small class="text-muted">Mobil ekran boyutu, dokunmatik arayüze özgü davranışlar ve diğer mobil özellikleri simüle eder.</small>
+                                    </div>
+                                    <div class="list-group-item">
+                                        <h6 class="mb-1">Safari - Mobil</h6>
+                                        <p class="mb-1">iPhone ve iPad gibi iOS cihazlarında Safari kullanan mobil ziyaretçiler.</p>
+                                        <small class="text-muted">Apple cihazlarına özgü özellikler, ekran boyutu ve Safari headerları içerir.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Davranış -->
+                    <div class="tab-pane fade" id="behavior" role="tabpanel" aria-labelledby="behavior-tab">
+                        <div class="card-body">
+                            <div class="alert alert-info mb-3">
+                                <strong>Davranış Ayarları</strong><br>
+                                Bu bölümde, isteklerde kullanılacak davranış ayarları hakkında bilgi edinebilirsiniz.
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="minTimeOnSite" class="form-label">Minimum Sitede Kalma Süresi (saniye)</label>
+                                <input type="number" class="form-control" id="minTimeOnSite" name="minTimeOnSite" min="5" max="120" value="20" aria-describedby="minTimeOnSiteHelp">
+                                <div id="minTimeOnSiteHelp" class="form-text">Sitede minimum kalma süresi (5-120 saniye)</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="maxTimeOnSite" class="form-label">Maksimum Sitede Kalma Süresi (saniye)</label>
+                                <input type="number" class="form-control" id="maxTimeOnSite" name="maxTimeOnSite" min="30" max="300" value="60" aria-describedby="maxTimeOnSiteHelp">
+                                <div id="maxTimeOnSiteHelp" class="form-text">Sitede maksimum kalma süresi (30-300 saniye)</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Tıklama Tipi Ağırlıkları (Toplam 100 olmalı)</label>
+                                
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text">Doğrudan Tıklama:</span>
+                                    <input type="number" class="form-control" id="weightDirectClick" name="weightDirectClick" min="0" max="100" value="20" aria-label="Doğrudan tıklama ağırlığı">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text">Google Referanslı:</span>
+                                    <input type="number" class="form-control" id="weightGoogleReferral" name="weightGoogleReferral" min="0" max="100" value="60" aria-label="Google referanslı ağırlığı">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text">Harici Link:</span>
+                                    <input type="number" class="form-control" id="weightExternalLink" name="weightExternalLink" min="0" max="100" value="20" aria-label="Harici link ağırlığı">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                
+                                <div class="form-text">Tıklama tiplerinin dağılım ağırlıkları. Toplam 100 olmalıdır.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="externalReferrerInput" class="form-label">Harici Referrer Siteleri</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="externalReferrerInput" name="externalReferrerInput" placeholder="https://example.com" aria-describedby="addExternalReferrerBtn">
+                                    <button class="btn btn-primary" type="button" id="addExternalReferrerBtn">Ekle</button>
+                                </div>
+                                <div id="externalReferrersContainer" class="tag-container" aria-live="polite">
+                                    <p class="text-muted text-center mb-0">Yükleniyor...</p>
+                                </div>
+                                <div class="form-text">Harici yönlendiren siteler. Bu sitelerden gelenler gibi görünen trafik oluşturulur.</div>
+                            </div>
+                            
+                            <button class="btn btn-primary" id="saveBehaviorSettingsBtn" type="button" aria-label="Davranış Ayarlarını Kaydet">Davranış Ayarlarını Kaydet</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Kontrol Paneli</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col">
+                                <button id="startBtn" class="btn btn-success w-100 mb-2" aria-label="İşlemi Başlat">
+                                    <i class="bi bi-play-fill"></i> Başlat
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button id="stopBtn" class="btn btn-danger w-100 mb-2" disabled aria-label="İşlemi Durdur">
+                                    <i class="bi bi-stop-fill"></i> Durdur
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>İstek Sonuçları</span>
+                            <div id="progressStats"></div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress" id="progressBar" aria-label="İşlem durumu">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div id="results-container" aria-live="polite" aria-label="Test sonuçları">
+                            <p class="text-muted text-center mt-5">Henüz sonuç yok.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <span>Log</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="logs" aria-live="polite" aria-label="Log mesajları"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js" integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Socket.io bağlantısı - transport seçeneği ve hata yakalama ekledik
+            let socket;
+            try {
+                // Doğrudan bağlantı yerine tam URL kullanarak bağlanma (CORS sorunlarını önler)
+                const serverUrl = window.location.protocol + '//' + window.location.hostname + ':' + (window.location.port || '5000');
+                console.log('Bağlanılacak Socket.IO URL:', serverUrl);
+                
+                socket = io(serverUrl, {
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 1000,
+                    forceNew: true
+                });
+                
+                console.log('Socket.io bağlantısı kurulmaya çalışılıyor...');
+                
+                // DOM elementlerini burada tanımlayalım, böylece yukarıda yaşanabilecek hatalar bunları engellemez
+                const logsElement = document.getElementById('logs');
+                const resultsContainer = document.getElementById('results-container');
+                const proxyStatus = document.getElementById('proxyStatus');
+                const proxyList = document.getElementById('proxyList');
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                const progressBar = document.getElementById('progressBar');
+                const progressBarInner = progressBar.querySelector('.progress-bar');
+                const progressStats = document.getElementById('progressStats');
+                const currentProxiesList = document.getElementById('currentProxiesList');
+                const keywordsContainer = document.getElementById('keywordsContainer');
+                
+                // Form elements
+                const targetUrl = document.getElementById('targetUrl');
+                const requestCount = document.getElementById('requestCount');
+                const timeout = document.getElementById('timeout');
+                const useDirectConnection = document.getElementById('useDirectConnection');
+                const proxyRetries = document.getElementById('proxyRetries');
+                const proxyInput = document.getElementById('proxyInput');
+                const addProxyBtn = document.getElementById('addProxyBtn');
+                
+                // Arrays to store proxies and keywords
+                let proxies = [];
+                let keywords = [];
+                let cookies = {};
+                
+                function logMessage(message, color = '#f8f8f8') {
+                    if (!logsElement) return;
+                    
+                    const logLine = document.createElement('div');
+                    logLine.innerHTML = `<span style="color: ${color}">${new Date().toLocaleTimeString()} - ${message}</span>`;
+                    logsElement.appendChild(logLine);
+                    logsElement.scrollTop = logsElement.scrollHeight;
+                    console.log(`${new Date().toLocaleTimeString()} - ${message}`);
+                }
+                
+                socket.on('connect', function() {
+                    console.log('Socket.io bağlantısı başarılı! Socket ID:', socket.id);
+                    logMessage('Sunucu bağlantısı kuruldu! Socket ID: ' + socket.id, '#8cffa0');
+                    
+                    // Bağlantı başarılı olduğunda, sunucudan veri isteyelim
+                    socket.emit('get_proxies');
+                    socket.emit('get_keywords');
+                    socket.emit('get_cookies');
+                    socket.emit('get_init_data');
+                    socket.emit('get_external_referrers'); // Harici referrerları istiyoruz
+                    socket.emit('get_behavior_settings');
+                    socket.emit('get_schedule');
+                    socket.emit('get_profile_settings');
+                });
+                
+                socket.on('connect_error', function(error) {
+                    console.error('Socket.io bağlantı hatası:', error);
+                    logMessage('Socket.io bağlantı hatası: ' + error, '#ff8c8c');
+                });
+                
+                socket.on('disconnect', function(reason) {
+                    console.log('Socket.io bağlantısı koptu. Sebep:', reason);
+                    logMessage('Socket.io bağlantısı koptu. Sebep: ' + reason, '#ffcc8c');
+                });
+                
+                // Initialize with values from server
+                socket.on('init_data', function(data) {
+                    console.log('Sunucudan init_data alındı:', data);
+                    
+                    if (targetUrl) targetUrl.value = data.target_url || '';
+                    if (requestCount) requestCount.value = data.request_count || 5;
+                    if (timeout) timeout.value = data.timeout || 10;
+                    if (useDirectConnection) useDirectConnection.checked = data.use_direct_connection || false;
+                    if (proxyRetries) proxyRetries.value = data.max_proxy_retries || 3;
+                    
+                    // Diğer sekme verilerini de yükle
+                    const searchDelay = document.getElementById('searchDelay');
+                    const requestDelay = document.getElementById('requestDelay');
+                    const randomizeDelays = document.getElementById('randomizeDelays');
+                    const simulateUserBehavior = document.getElementById('simulateUserBehavior');
+                    
+                    if (searchDelay) searchDelay.value = data.search_delay || 2;
+                    if (requestDelay) requestDelay.value = data.request_delay || 3;
+                    if (randomizeDelays) randomizeDelays.checked = data.randomize_delays !== undefined ? data.randomize_delays : true;
+                    if (simulateUserBehavior) simulateUserBehavior.checked = data.simulate_user_behavior !== undefined ? data.simulate_user_behavior : true;
+                    
+                    // Profil ayarlarını yükle
+                    const useRandomProfile = document.getElementById('useRandomProfile');
+                    const defaultProfile = document.getElementById('defaultProfile');
+                    
+                    if (useRandomProfile) useRandomProfile.checked = data.use_random_profile !== undefined ? data.use_random_profile : true;
+                    if (defaultProfile && data.default_profile) defaultProfile.value = data.default_profile;
+                    
+                    // Davranış ayarlarını yükle
+                    const minTimeOnSite = document.getElementById('minTimeOnSite');
+                    const maxTimeOnSite = document.getElementById('maxTimeOnSite');
+                    const weightDirectClick = document.getElementById('weightDirectClick');
+                    const weightGoogleReferral = document.getElementById('weightGoogleReferral');
+                    const weightExternalLink = document.getElementById('weightExternalLink');
+                    
+                    if (minTimeOnSite) minTimeOnSite.value = data.min_time_on_site || 20;
+                    if (maxTimeOnSite) maxTimeOnSite.value = data.max_time_on_site || 60;
+                    if (weightDirectClick) weightDirectClick.value = data.weight_direct_click || 20;
+                    if (weightGoogleReferral) weightGoogleReferral.value = data.weight_google_referral || 60;
+                    if (weightExternalLink) weightExternalLink.value = data.weight_external_link || 20;
+                });
+                
+                // Proxy and keyword list handlers
+                socket.on('proxy_list', function(data) {
+                    console.log('Proxy listesi alındı:', data);
+                    proxies = data.proxies || [];
+                    updateProxyList();
+                });
+                
+                // Add proxy
+                if (addProxyBtn) {
+                    addProxyBtn.addEventListener('click', function() {
+                        if (!proxyInput) return;
+                        const proxy = proxyInput.value.trim();
+                        if (!proxy) return;
+                        
+                        if (!proxies.includes(proxy)) {
+                            socket.emit('add_proxy', { proxy: proxy });
+                            proxies.push(proxy);
+                            updateProxyList();
+                            proxyInput.value = '';
+                        }
+                    });
+                }
+                
+                // Update proxy list UI
+                function updateProxyList() {
+                    if (!currentProxiesList) return;
+                    
+                    if (proxies.length === 0) {
+                        currentProxiesList.innerHTML = '<p class="text-muted text-center">Henüz proxy eklenmedi</p>';
+                        return;
+                    }
+                    
+                    let html = '<ul class="list-group">';
+                    proxies.forEach(proxy => {
+                        html += `
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                ${proxy}
+                                <button type="button" class="btn btn-sm btn-danger remove-proxy" data-proxy="${proxy}" aria-label="Proxy Sil">Sil</button>
+                            </li>
+                        `;
+                    });
+                    html += '</ul>';
+                    
+                    currentProxiesList.innerHTML = html;
+                    
+                    // Add event listeners for remove buttons
+                    document.querySelectorAll('.remove-proxy').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const proxy = this.getAttribute('data-proxy');
+                            socket.emit('remove_proxy', { proxy: proxy });
+                            proxies = proxies.filter(p => p !== proxy);
+                            updateProxyList();
+                        });
+                    });
+                }
+                
+                // Start button
+                if (startBtn) {
+                    startBtn.addEventListener('click', function() {
+                        // Form verilerini toplama ve doğrulama
+                        if (!targetUrl || !targetUrl.value) {
+                            alert('Lütfen hedef URL girin!');
+                            return;
+                        }
+                        
+                        const config = {
+                            target_url: targetUrl.value,
+                            request_count: parseInt(requestCount.value) || 5,
+                            timeout: parseInt(timeout.value) || 10,
+                            use_direct_connection: useDirectConnection.checked
+                        };
+                        
+                        console.log('Test başlatılıyor, gönderilen yapılandırma:', config);
+                        
+                        // İşlemi başlatma
+                        socket.emit('start_test', config);
+                        
+                        // UI güncelleme
+                        startBtn.disabled = true;
+                        stopBtn.disabled = false;
+                        
+                        logMessage('Test başlatılıyor...', '#8cffa0');
+                        
+                        if (resultsContainer) {
+                            resultsContainer.innerHTML = '<p class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Yükleniyor...</span></div><br>İşlem başlatılıyor...</p>';
+                        }
+                        
+                        if (progressBarInner) {
+                            progressBarInner.style.width = '0%';
+                            progressBarInner.setAttribute('aria-valuenow', 0);
+                        }
+                        
+                        if (progressStats) {
+                            progressStats.innerHTML = '<span class="badge bg-primary">Hazırlanıyor...</span>';
+                        }
+                    });
+                }
+                
+                // Stop button
+                if (stopBtn) {
+                    stopBtn.addEventListener('click', function() {
+                        socket.emit('stop_test');
+                        startBtn.disabled = false;
+                        stopBtn.disabled = true;
+                        
+                        logMessage('Test durduruldu.', '#ffcc8c');
+                    });
+                }
+                
+                // Test başlatıldı olayı
+                socket.on('test_started', function(data) {
+                    console.log('Test başlatıldı sinyali alındı:', data);
+                    logMessage(`Test başlatıldı: ${data.request_count} istek gönderilecek`, '#8cffa0');
+                    
+                    if (progressStats) {
+                        progressStats.innerHTML = `<span class="badge bg-info">0/${data.request_count}</span>`;
+                    }
+                });
+                
+                // Test sonuçlarını güncelleme
+                socket.on('request_result', function(data) {
+                    console.log('Yeni istek sonucu alındı:', data);
+                    
+                    if (!resultsContainer) return;
+                    
+                    // Eğer ilk sonuçsa, container'ı temizle
+                    if (data.request_number === 1) {
+                        resultsContainer.innerHTML = '';
+                    }
+                    
+                    // Sonuç elemanını oluştur
+                    const resultElem = document.createElement('div');
+                    resultElem.className = 'request-result ' + (data.success ? 'request-success' : 'request-failure');
+                    resultElem.setAttribute('role', 'region');
+                    resultElem.setAttribute('aria-label', `İstek ${data.request_number}: ${data.success ? 'Başarılı' : 'Başarısız'}`);
+                    
+                    resultElem.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <h5>İstek #${data.request_number}</h5>
+                            <span class="badge ${data.success ? 'bg-success' : 'bg-danger'}">${data.success ? 'Başarılı' : 'Başarısız'}</span>
+                        </div>
+                        <div><strong>Anahtar Kelime:</strong> ${data.keyword || 'Belirtilmedi'}</div>
+                        <div><strong>Arama Sonucu:</strong> ${data.search_result || 'Bulunamadı'}</div>
+                        <div><strong>Proxy:</strong> ${data.proxy || 'Doğrudan Bağlantı'}</div>
+                        <div><strong>Durum Kodu:</strong> ${data.status_code || 'N/A'}</div>
+                        <div><strong>İşlem Süresi:</strong> ${data.time_taken ? data.time_taken.toFixed(2) + ' saniye' : 'N/A'}</div>
+                    `;
+                    
+                    resultsContainer.appendChild(resultElem);
+                    resultsContainer.scrollTop = resultsContainer.scrollHeight;
+                    
+                    // İlerleme çubuğunu güncelle
+                    if (progressBarInner) {
+                        const percent = (data.request_number / data.total_requests) * 100;
+                        progressBarInner.style.width = `${percent}%`;
+                        progressBarInner.setAttribute('aria-valuenow', percent);
+                    }
+                    
+                    if (progressStats) {
+                        progressStats.innerHTML = `<span class="badge bg-info">${data.request_number}/${data.total_requests}</span>`;
+                    }
+                    
+                    // Log'a da ekle
+                    logMessage(`İstek #${data.request_number}: ${data.success ? 'Başarılı' : 'Başarısız'}`, data.success ? '#8cffa0' : '#ff8c8c');
+                });
+                
+                // Test tamamlandı olayı
+                socket.on('test_completed', function(data) {
+                    console.log('Test tamamlandı sinyali alındı:', data);
+                    
+                    logMessage(`Test tamamlandı! ${data.successful_requests}/${data.total_requests} başarılı, Başarı oranı: ${data.success_rate}%`, '#8cffa0');
+                    
+                    if (startBtn) startBtn.disabled = false;
+                    if (stopBtn) stopBtn.disabled = true;
+                    
+                    if (progressStats) {
+                        progressStats.innerHTML = `<span class="badge bg-success">Tamamlandı</span>`;
+                    }
+                    
+                    // Sonuç özeti ekle
+                    if (resultsContainer) {
+                        const summaryDiv = document.createElement('div');
+                        summaryDiv.className = 'alert alert-info mt-3';
+                        summaryDiv.setAttribute('role', 'alert');
+                        summaryDiv.innerHTML = `
+                            <h5>Test Tamamlandı</h5>
+                            <div><strong>Başarılı İstekler:</strong> ${data.successful_requests}/${data.total_requests}</div>
+                            <div><strong>Başarı Oranı:</strong> ${data.success_rate}%</div>
+                        `;
+                        resultsContainer.appendChild(summaryDiv);
+                        resultsContainer.scrollTop = resultsContainer.scrollHeight;
+                    }
+                });
+                
+                // Harici referrerlar için yardımcı fonksiyon
+                function updateExternalReferrersList(referrers) {
+                    const externalReferrersContainer = document.getElementById('externalReferrersContainer');
+                    if (!externalReferrersContainer) return;
+                    
+                    if (!referrers || referrers.length === 0) {
+                        externalReferrersContainer.innerHTML = '<p class="text-muted text-center mb-0">Henüz referrer eklenmedi</p>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    referrers.forEach(referrer => {
+                        html += `
+                            <span class="keyword-tag">
+                                ${referrer}
+                                <span class="close" data-referrer="${referrer}">&times;</span>
+                            </span>
+                        `;
+                    });
+                    
+                    externalReferrersContainer.innerHTML = html;
+                    
+                    // Silme düğmelerine olay dinleyicileri ekle
+                    document.querySelectorAll('.keyword-tag .close[data-referrer]').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const referrer = this.getAttribute('data-referrer');
+                            socket.emit('remove_external_referrer', { referrer: referrer });
+                            logMessage(`Harici referrer silindi: ${referrer}`, '#ffcc8c');
+                        });
+                    });
+                }
+                
+                // Form verilerini gönder
+                if (document.getElementById('settingsForm')) {
+                    document.getElementById('settingsForm').addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        startBtn.click();
+                    });
+                }
+                
+                // Anahtar kelime işlemleri
+                const keywordInput = document.getElementById('keywordInput');
+                const addKeywordBtn = document.getElementById('addKeywordBtn');
+                
+                if (addKeywordBtn && keywordInput && keywordsContainer) {
+                    addKeywordBtn.addEventListener('click', function() {
+                        const keyword = keywordInput.value.trim();
+                        if (!keyword) return;
+                        
+                        socket.emit('add_keyword', { keyword: keyword });
+                        keywords.push(keyword);
+                        updateKeywordList();
+                        keywordInput.value = '';
+                    });
+                }
+                
+                socket.on('keyword_list', function(data) {
+                    console.log('Keyword listesi alındı:', data);
+                    keywords = data.keywords || [];
+                    updateKeywordList();
+                });
+                
+                function updateKeywordList() {
+                    if (!keywordsContainer) return;
+                    
+                    if (keywords.length === 0) {
+                        keywordsContainer.innerHTML = '<p class="text-muted text-center">Henüz anahtar kelime eklenmedi</p>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    keywords.forEach(keyword => {
+                        html += `
+                            <span class="keyword-tag">
+                                ${keyword}
+                                <span class="close" data-keyword="${keyword}">&times;</span>
+                            </span>
+                        `;
+                    });
+                    
+                    keywordsContainer.innerHTML = html;
+                    
+                    // Silme düğmelerine olay dinleyicileri ekle
+                    document.querySelectorAll('.keyword-tag .close').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const keyword = this.getAttribute('data-keyword');
+                            socket.emit('remove_keyword', { keyword: keyword });
+                            keywords = keywords.filter(k => k !== keyword);
+                            updateKeywordList();
+                        });
+                    });
+                }
+                
+                // Cookie işlemleri
+                const cookieNameInput = document.getElementById('cookieNameInput');
+                const cookieValueInput = document.getElementById('cookieValueInput');
+                const addCookieBtn = document.getElementById('addCookieBtn');
+                const currentCookiesList = document.getElementById('currentCookiesList');
+                const importCookiesBtn = document.getElementById('importCookiesBtn');
+                const exportCookiesBtn = document.getElementById('exportCookiesBtn');
+                
+                if (addCookieBtn && cookieNameInput && cookieValueInput) {
+                    addCookieBtn.addEventListener('click', function() {
+                        const name = cookieNameInput.value.trim();
+                        const value = cookieValueInput.value.trim();
+                        if (!name || !value) return;
+                        
+                        socket.emit('add_cookie', { name: name, value: value });
+                        cookies[name] = value;
+                        updateCookieList();
+                        cookieNameInput.value = '';
+                        cookieValueInput.value = '';
+                    });
+                }
+                
+                socket.on('cookie_list', function(data) {
+                    console.log('Cookie listesi alındı:', data);
+                    cookies = data.cookies || {};
+                    updateCookieList();
+                });
+                
+                function updateCookieList() {
+                    if (!currentCookiesList) return;
+                    
+                    const cookieKeys = Object.keys(cookies);
+                    if (cookieKeys.length === 0) {
+                        currentCookiesList.innerHTML = '<p class="text-muted text-center">Henüz cookie eklenmedi</p>';
+                        return;
+                    }
+                    
+                    let html = '<ul class="list-group">';
+                    cookieKeys.forEach(key => {
+                        html += `
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${key}</strong>: 
+                                    <span class="text-muted text-truncate" style="max-width: 150px; display: inline-block;">${cookies[key]}</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger remove-cookie" data-cookie="${key}" aria-label="Cookie Sil">Sil</button>
+                            </li>
+                        `;
+                    });
+                    html += '</ul>';
+                    
+                    currentCookiesList.innerHTML = html;
+                    
+                    // Silme düğmelerine olay dinleyicileri ekle
+                    document.querySelectorAll('.remove-cookie').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const cookieName = this.getAttribute('data-cookie');
+                            socket.emit('remove_cookie', { name: cookieName });
+                            delete cookies[cookieName];
+                            updateCookieList();
+                        });
+                    });
+                }
+                
+                // Zamanlayıcı işlemleri
+                const startSchedulerBtn = document.getElementById('startSchedulerBtn');
+                const stopSchedulerBtn = document.getElementById('stopSchedulerBtn');
+                const runNowBtn = document.getElementById('runNowBtn');
+                const scheduleTimeInput = document.getElementById('scheduleTimeInput');
+                const addScheduleTimeBtn = document.getElementById('addScheduleTimeBtn');
+                const scheduleTimesContainer = document.getElementById('scheduleTimesContainer');
+                const schedulerStatus = document.getElementById('schedulerStatus');
+                
+                if (startSchedulerBtn) {
+                    startSchedulerBtn.addEventListener('click', function() {
+                        socket.emit('start_scheduler');
+                        logMessage('Zamanlayıcı başlatıldı', '#8cffa0');
+                    });
+                }
+                
+                if (stopSchedulerBtn) {
+                    stopSchedulerBtn.addEventListener('click', function() {
+                        socket.emit('stop_scheduler');
+                        logMessage('Zamanlayıcı durduruldu', '#ffcc8c');
+                    });
+                }
+                
+                if (runNowBtn) {
+                    runNowBtn.addEventListener('click', function() {
+                        socket.emit('run_now');
+                        logMessage('Zamanlanmış test hemen başlatılıyor...', '#8cffa0');
+                    });
+                }
+                
+                if (addScheduleTimeBtn && scheduleTimeInput) {
+                    addScheduleTimeBtn.addEventListener('click', function() {
+                        const time = scheduleTimeInput.value;
+                        if (!time) return;
+                        
+                        socket.emit('add_schedule_time', { time: time });
+                        logMessage(`Zaman eklendi: ${time}`, '#8cffa0');
+                        scheduleTimeInput.value = '';
+                    });
+                }
+                
+                socket.on('schedule_list', function(data) {
+                    console.log('Zamanlayıcı listesi alındı:', data);
+                    updateScheduleList(data.times || []);
+                    updateSchedulerStatus(data);
+                });
+                
+                socket.on('scheduler_status', function(data) {
+                    console.log('Zamanlayıcı durumu alındı:', data);
+                    updateSchedulerStatus(data);
+                });
+                
+                function updateScheduleList(times) {
+                    if (!scheduleTimesContainer) return;
+                    
+                    if (!times || times.length === 0) {
+                        scheduleTimesContainer.innerHTML = '<p class="text-muted text-center mb-0">Henüz zaman eklenmedi</p>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    times.forEach(time => {
+                        html += `
+                            <span class="keyword-tag">
+                                ${time}
+                                <span class="close" data-time="${time}">&times;</span>
+                            </span>
+                        `;
+                    });
+                    
+                    scheduleTimesContainer.innerHTML = html;
+                    
+                    // Silme düğmelerine olay dinleyicileri ekle
+                    document.querySelectorAll('.keyword-tag .close[data-time]').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const time = this.getAttribute('data-time');
+                            socket.emit('remove_schedule_time', { time: time });
+                            logMessage(`Zaman silindi: ${time}`, '#ffcc8c');
+                        });
+                    });
+                }
+                
+                function updateSchedulerStatus(data) {
+                    if (!schedulerStatus) return;
+                    
+                    if (data.is_running) {
+                        schedulerStatus.className = 'alert alert-success';
+                        schedulerStatus.innerHTML = `<strong>Zamanlayıcı çalışıyor</strong><br>Sonraki çalışma: ${data.next_run || 'Bugün çalışmayacak'}`;
+                        
+                        if (startSchedulerBtn) startSchedulerBtn.disabled = true;
+                        if (stopSchedulerBtn) stopSchedulerBtn.disabled = false;
+                    } else {
+                        schedulerStatus.className = 'alert alert-warning';
+                        schedulerStatus.innerHTML = '<strong>Zamanlayıcı durduruldu</strong><br>Zamanlanmış testler çalışmayacak.';
+                        
+                        if (startSchedulerBtn) startSchedulerBtn.disabled = false;
+                        if (stopSchedulerBtn) stopSchedulerBtn.disabled = true;
+                    }
+                }
+                
+                // Davranış ve Profil ayarları
+                const saveBehaviorSettingsBtn = document.getElementById('saveBehaviorSettingsBtn');
+                
+                if (saveBehaviorSettingsBtn) {
+                    saveBehaviorSettingsBtn.addEventListener('click', function() {
+                        const minTimeOnSite = document.getElementById('minTimeOnSite');
+                        const maxTimeOnSite = document.getElementById('maxTimeOnSite');
+                        const weightDirectClick = document.getElementById('weightDirectClick');
+                        const weightGoogleReferral = document.getElementById('weightGoogleReferral');
+                        const weightExternalLink = document.getElementById('weightExternalLink');
+                        
+                        // Ağırlık toplamının 100 olup olmadığını kontrol et
+                        const totalWeight = parseInt(weightDirectClick.value) + 
+                                            parseInt(weightGoogleReferral.value) + 
+                                            parseInt(weightExternalLink.value);
+                        
+                        if (totalWeight !== 100) {
+                            alert('Tıklama tipi ağırlıklarının toplamı 100 olmalıdır! Şu anki toplam: ' + totalWeight);
+                            return;
+                        }
+                        
+                        if (parseInt(minTimeOnSite.value) > parseInt(maxTimeOnSite.value)) {
+                            alert('Minimum ziyaret süresi maksimum ziyaret süresinden büyük olamaz!');
+                            return;
+                        }
+                        
+                        const behaviorSettings = {
+                            min_time_on_site: parseInt(minTimeOnSite.value),
+                            max_time_on_site: parseInt(maxTimeOnSite.value),
+                            weight_direct_click: parseInt(weightDirectClick.value),
+                            weight_google_referral: parseInt(weightGoogleReferral.value),
+                            weight_external_link: parseInt(weightExternalLink.value)
+                        };
+                        
+                        console.log('Davranış ayarları gönderiliyor:', behaviorSettings);
+                        socket.emit('save_behavior_settings', behaviorSettings);
+                        logMessage('Davranış ayarları kaydedildi', '#8cffa0');
+                    });
+                }
+                
+                // Behavior settings update handler
+                socket.on('behavior_settings', function(data) {
+                    console.log('Davranış ayarları alındı:', data);
+                    
+                    const minTimeOnSite = document.getElementById('minTimeOnSite');
+                    const maxTimeOnSite = document.getElementById('maxTimeOnSite');
+                    const weightDirectClick = document.getElementById('weightDirectClick');
+                    const weightGoogleReferral = document.getElementById('weightGoogleReferral');
+                    const weightExternalLink = document.getElementById('weightExternalLink');
+                    
+                    if (minTimeOnSite) minTimeOnSite.value = data.min_time_on_site || 20;
+                    if (maxTimeOnSite) maxTimeOnSite.value = data.max_time_on_site || 60;
+                    if (weightDirectClick) weightDirectClick.value = data.weight_direct_click || 20;
+                    if (weightGoogleReferral) weightGoogleReferral.value = data.weight_google_referral || 60;
+                    if (weightExternalLink) weightExternalLink.value = data.weight_external_link || 20;
+                    
+                    // Referrer listesini güncelle
+                    if (data.external_referrers && externalReferrersContainer) {
+                        updateExternalReferrersList(data.external_referrers);
+                    }
+                    
+                    console.log('Form elemanları güncellendi: ', {
+                        minTimeOnSite: minTimeOnSite ? minTimeOnSite.value : 'not found',
+                        maxTimeOnSite: maxTimeOnSite ? maxTimeOnSite.value : 'not found',
+                        weightDirectClick: weightDirectClick ? weightDirectClick.value : 'not found',
+                        weightGoogleReferral: weightGoogleReferral ? weightGoogleReferral.value : 'not found',
+                        weightExternalLink: weightExternalLink ? weightExternalLink.value : 'not found'
+                    });
+                });
+                
+                // Profil ayarları
+                const useRandomProfile = document.getElementById('useRandomProfile');
+                const defaultProfile = document.getElementById('defaultProfile');
+                
+                if (useRandomProfile && defaultProfile) {
+                    useRandomProfile.addEventListener('change', updateProfileSettings);
+                    defaultProfile.addEventListener('change', updateProfileSettings);
+                    
+                    function updateProfileSettings() {
+                        const settings = {
+                            use_random_profile: useRandomProfile.checked,
+                            default_profile: defaultProfile.value
+                        };
+                        
+                        socket.emit('update_profile_settings', settings);
+                        logMessage('Profil ayarları güncellendi', '#8cffa0');
+                    }
+                }
+                
+                // Harici referrerlar için event listener
+                socket.on('external_referrers', function(data) {
+                    console.log('Harici referrerlar alındı:', data);
+                    updateExternalReferrersList(data.referrers || []);
+                });
+                
+                // Import/Export cookies
+                if (importCookiesBtn) {
+                    importCookiesBtn.addEventListener('click', function() {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.json';
+                        
+                        input.onchange = e => {
+                            const file = e.target.files[0];
+                            const reader = new FileReader();
+                            
+                            reader.onload = function(event) {
+                                try {
+                                    const jsonData = JSON.parse(event.target.result);
+                                    socket.emit('import_cookies', { cookies: jsonData });
+                                    cookies = jsonData;
+                                    updateCookieList();
+                                    logMessage('Cookies başarıyla içe aktarıldı!', '#8cffa0');
+                                } catch (err) {
+                                    logMessage('Geçersiz JSON dosyası!', '#ff8c8c');
+                                }
+                            };
+                            
+                            reader.readAsText(file);
+                        };
+                        
+                        input.click();
+                    });
+                }
+                
+                if (exportCookiesBtn) {
+                    exportCookiesBtn.addEventListener('click', function() {
+                        const jsonString = JSON.stringify(cookies, null, 2);
+                        const blob = new Blob([jsonString], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'cookies.json';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        logMessage('Cookies başarıyla dışa aktarıldı!', '#8cffa0');
+                    });
+                }
+                
+                // Sunucudan gelen genel log mesajları
+                socket.on('log_message', function(data) {
+                    console.log('Log mesajı alındı:', data);
+                    logMessage(data.message, data.color || '#f8f8f8');
+                });
+                
+                // Harici Referrer
+                const externalReferrerInput = document.getElementById('externalReferrerInput');
+                const addExternalReferrerBtn = document.getElementById('addExternalReferrerBtn');
+                const externalReferrersContainer = document.getElementById('externalReferrersContainer');
+                
+                if (addExternalReferrerBtn && externalReferrerInput) {
+                    addExternalReferrerBtn.addEventListener('click', function() {
+                        const referrer = externalReferrerInput.value.trim();
+                        if (!referrer) return;
+                        
+                        socket.emit('add_external_referrer', { referrer: referrer });
+                        logMessage(`Harici referrer eklendi: ${referrer}`, '#8cffa0');
+                        externalReferrerInput.value = '';
+                    });
+                }
+                
+                socket.on('external_referrers', function(data) {
+                    console.log('Harici referrerlar alındı:', data);
+                    updateExternalReferrersList(data.referrers || []);
+                });
+                
+                // Bağlantı kurulduğunda davranış bilgilerini al 
+                socket.on('connect', function() {
+                    console.log('Bağlantı kuruldu, davranış ve profil bilgileri isteniyor');
+                    socket.emit('get_behavior_settings');
+                    socket.emit('get_external_referrers');
+                    socket.emit('get_schedule');
+                    socket.emit('get_profile_settings');
+                });
+                
+                // Hataları önlemek için başlangıçta Socket.io bağlantısını kontrol et
+                if (!socket.connected) {
+                    logMessage('Socket.io bağlantısı kuruluyor, lütfen bekleyin...', '#ffcc8c');
+                }
+                
+            } catch (e) {
+                console.error('Socket.io başlatma hatası:', e);
+                alert('Socket.io başlatma hatası. Lütfen sayfayı yenileyin: ' + e.message);
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+        }
+        #logs {
+            height: 200px;
+            overflow-y: auto;
+            background-color: #222;
+            color: #f8f8f8;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        #results-container {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .request-result {
+            border-left: 5px solid #6c757d;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+        }
+        .request-success {
+            border-left-color: #28a745;
+        }
+        .request-failure {
+            border-left-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Socket.IO Test</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        Kontrol Paneli
+                    </div>
+                    <div class="card-body">
+                        <button id="startTestBtn" class="btn btn-primary mb-3">Dummy Test Başlat</button>
+                        
+                        <div class="mb-3">
+                            <label for="messageInput" class="form-label">Test Mesajı</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="messageInput" placeholder="Mesajınızı girin...">
+                                <button class="btn btn-outline-secondary" type="button" id="sendMessageBtn">Gönder</button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="connectionStatus" class="form-label">Bağlantı Durumu</label>
+                            <div id="connectionStatus" class="alert alert-warning">Bağlantı bekleniyor...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        Log
+                    </div>
+                    <div class="card-body">
+                        <div id="logs"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        İstek Sonuçları
+                    </div>
+                    <div class="card-body">
+                        <div id="results-container">
+                            <p class="text-muted text-center mt-5">Henüz sonuç yok. "Dummy Test Başlat" düğmesine tıklayın.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const logsElement = document.getElementById('logs');
+            const resultsContainer = document.getElementById('results-container');
+            const connectionStatus = document.getElementById('connectionStatus');
+            const startTestBtn = document.getElementById('startTestBtn');
+            const messageInput = document.getElementById('messageInput');
+            const sendMessageBtn = document.getElementById('sendMessageBtn');
+            
+            // Log function
+            function log(message, color = '#f8f8f8') {
+                const logLine = document.createElement('div');
+                logLine.innerHTML = `<span style="color: ${color}">${new Date().toLocaleTimeString()} - ${message}</span>`;
+                logsElement.appendChild(logLine);
+                logsElement.scrollTop = logsElement.scrollHeight;
+                console.log(`${new Date().toLocaleTimeString()} - ${message}`);
+            }
+            
+            log('Sayfa yüklendi', '#8cffa0');
+            
+            // Socket.io connection
+            let socket;
+            try {
+                socket = io({
+                    transports: ['websocket', 'polling'],
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 1000
+                });
+                log('Socket.io bağlantısı kurulmaya çalışılıyor...', '#ffcc8c');
+                
+                socket.on('connect', function() {
+                    log('Socket.io bağlantısı başarılı! Socket ID: ' + socket.id, '#8cffa0');
+                    connectionStatus.className = 'alert alert-success';
+                    connectionStatus.textContent = 'Bağlantı kuruldu! Socket ID: ' + socket.id;
+                });
+                
+                socket.on('disconnect', function(reason) {
+                    log('Socket.io bağlantısı koptu. Sebep: ' + reason, '#ffcc8c');
+                    connectionStatus.className = 'alert alert-danger';
+                    connectionStatus.textContent = 'Bağlantı koptu! Sebep: ' + reason;
+                });
+                
+                socket.on('connect_error', function(error) {
+                    log('Socket.io bağlantı hatası: ' + error, '#ff8c8c');
+                    connectionStatus.className = 'alert alert-danger';
+                    connectionStatus.textContent = 'Bağlantı hatası! Sebep: ' + error;
+                });
+                
+                // Server messages
+                socket.on('server_message', function(data) {
+                    log('Sunucu mesajı: ' + data.message, '#8cffa0');
+                });
+                
+                socket.on('server_response', function(data) {
+                    log('Sunucu yanıtı: ' + data.response, '#8cffa0');
+                });
+                
+                // Request results
+                socket.on('request_result', function(data) {
+                    log('İstek sonucu alındı: #' + data.request_number, '#8cffa0');
+                    
+                    try {
+                        if (data.request_number === 1) {
+                            resultsContainer.innerHTML = '';
+                        }
+                        
+                        const resultItem = document.createElement('div');
+                        resultItem.className = `request-result ${data.success ? 'request-success' : 'request-failure'}`;
+                        
+                        let searchResultHtml = '';
+                        if (data.search_result) {
+                            searchResultHtml = `<div class="mb-2"><strong>Arama Sonucu:</strong> ${data.search_result}</div>`;
+                        } else {
+                            searchResultHtml = '<div class="mb-2 text-danger">❌ Arama sonucu bulunamadı</div>';
+                        }
+                        
+                        resultItem.innerHTML = `
+                            <div class="d-flex justify-content-between">
+                                <h5>İstek #${data.request_number}</h5>
+                                <span class="badge ${data.success ? 'bg-success' : 'bg-danger'}">${data.success ? 'Başarılı' : 'Başarısız'}</span>
+                            </div>
+                            <div class="mb-2"><strong>Anahtar Kelime:</strong> ${data.keyword || 'Belirtilmedi'}</div>
+                            ${searchResultHtml}
+                            <div class="mb-2"><strong>Proxy:</strong> ${data.proxy || 'Doğrudan Bağlantı'}</div>
+                            <div><strong>Durum:</strong> ${data.status_code || 'N/A'}</div>
+                            <div><strong>İşlem Süresi:</strong> ${data.time_taken ? data.time_taken.toFixed(2) + ' saniye' : 'N/A'}</div>
+                        `;
+                        
+                        resultsContainer.appendChild(resultItem);
+                        resultsContainer.scrollTop = resultsContainer.scrollHeight;
+                        
+                        log('İstek sonucu başarıyla görüntülendi: #' + data.request_number, '#8cffa0');
+                    } catch (e) {
+                        log('Sonuç işleme hatası: ' + e.message, '#ff8c8c');
+                        console.error('Sonuç işleme hatası:', e);
+                    }
+                });
+                
+            } catch (e) {
+                log('Socket.io başlatma hatası: ' + e.message, '#ff8c8c');
+                console.error('Socket.io başlatma hatası:', e);
+            }
+            
+            // Event listeners
+            startTestBtn.addEventListener('click', function() {
+                log('Dummy test başlatılıyor...', '#ffcc8c');
+                socket.emit('start_test', {});
+            });
+            
+            sendMessageBtn.addEventListener('click', function() {
+                const message = messageInput.value.trim();
+                if (message) {
+                    log('Mesaj gönderiliyor: ' + message, '#ffcc8c');
+                    socket.emit('test_message', { message: message });
+                    messageInput.value = '';
+                }
+            });
+            
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessageBtn.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,2 @@
+socks5://kullanici:sifre@proxy2:port
+http://proxy3:port

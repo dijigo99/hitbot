@@ -1,0 +1,37 @@
+2025-05-07 19:09:46,294 - hitbot - INFO - Logging başlatıldı
+2025-05-07 19:21:29,835 - hitbot - INFO - Logging başlatıldı
+2025-05-07 19:24:47,731 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 60.81s - Success: True
+2025-05-07 19:28:38,446 - hitbot - INFO - Logging başlatıldı
+2025-05-07 19:29:45,395 - hitbot - INFO - Logging başlatıldı
+2025-05-07 19:29:49,795 - hitbot - INFO - Logging başlatıldı
+2025-05-07 19:30:47,014 - hitbot - INFO - Logging başlatıldı
+2025-05-07 19:48:47,463 - hitbot - INFO - Logging başlatıldı
+2025-05-07 19:49:42,359 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 40.83s - Success: True
+2025-05-07 19:52:27,870 - hitbot - INFO - Logging başlatıldı
+2025-05-07 19:52:59,259 - hitbot - INFO - Logging başlatıldı
+2025-05-07 19:54:15,329 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 65.20s - Success: True
+2025-05-07 19:54:15,343 - hitbot - INFO - Test Summary - Duration: 65.23s - Success: 1/10 (10.00%)
+2025-05-07 19:59:32,575 - hitbot - INFO - Logging başlatıldı
+2025-05-07 20:00:22,091 - hitbot - INFO - Logging başlatıldı
+2025-05-07 20:01:24,765 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 51.92s - Success: True
+2025-05-07 20:06:25,143 - hitbot - INFO - Logging başlatıldı
+2025-05-07 20:07:35,083 - hitbot - INFO - Logging başlatıldı
+2025-05-07 20:10:41,805 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 59.32s - Success: True
+2025-05-07 20:34:02,442 - hitbot - INFO - Logging başlatıldı
+2025-05-07 20:35:18,830 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 58.03s - Success: True
+2025-05-07 20:54:21,623 - hitbot - INFO - Logging başlatıldı
+2025-05-07 20:55:08,065 - hitbot - ERROR - Request: https://hepsiburada.com - Status: None - Time: 38.96s - Success: False - Error: There are multiple cookies with name, '_abck'
+2025-05-07 20:56:01,043 - hitbot - ERROR - Request: https://hepsiburada.com - Status: None - Time: 6.62s - Success: False - Error: Doğrudan bağlantı başarısız oldu
+2025-05-07 20:58:18,118 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 53.31s - Success: True
+2025-05-07 20:59:19,950 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 37.08s - Success: True
+2025-05-07 21:03:46,572 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 50.99s - Success: True
+2025-05-07 21:05:41,251 - hitbot - INFO - Logging başlatıldı
+2025-05-07 21:06:47,459 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 52.95s - Success: True
+2025-05-07 21:11:16,681 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 36.93s - Success: True
+2025-05-07 21:11:16,692 - hitbot - INFO - Test Summary - Duration: 36.96s - Success: 1/5 (20.00%)
+2025-05-07 21:19:24,050 - hitbot - INFO - Logging başlatıldı
+2025-05-07 21:23:11,332 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 47.68s - Success: True
+2025-05-07 21:27:44,004 - hitbot - INFO - Logging başlatıldı
+2025-05-07 21:30:02,642 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 58.76s - Success: True
+2025-05-07 21:40:44,249 - hitbot - INFO - Logging başlatıldı
+2025-05-07 21:45:53,397 - hitbot - INFO - Request: https://101firsat.com - Status: 200 - Time: 33.28s - Success: True
