@@ -1,27 +1,13 @@
 services:
   - type: web
-    name: hitbot
-    runtime: python
+    name: request-hit-bot
+    env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    startCommand: gunicorn app:app
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.8.0
+      - key: SECRET_KEY
+        generateValue: true
       - key: PORT
-        value: 10000
-      - key: TARGET_URL
-        value: ""
-      - key: REQUEST_COUNT
-        value: "5"
-      - key: TIMEOUT
-        value: "10"
-      - key: USE_DIRECT_CONNECTION
-        value: "false"
-      - key: MAX_PROXY_RETRIES
-        value: "3"
-      - key: SEARCH_DELAY
-        value: "2"
-      - key: REQUEST_DELAY
-        value: "3"
-      - key: RANDOMIZE_DELAYS
-        value: "true"
-      - key: SIMULATE_USER_BEHAVIOR
-        value: "true" 
+        value: 5000
