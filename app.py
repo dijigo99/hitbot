@@ -567,7 +567,9 @@ def make_request_with_retry(proxy_list, user_agent, cookies, keywords, request_n
         'success': False,
         'status_code': None,
         'search_result': None,
-        'error': f"Tüm proxy'ler başarısız oldu ({MAX_PROXY_RETRIES} deneme)"
+        'error': "Tüm proxy'ler başarısız oldu",
+        'keyword': None,
+        'time_taken': 0
     }
 
 def run_test(settings):
@@ -612,30 +614,42 @@ def run_test(settings):
     successful_requests = 0
     
     # Check if cookies are valid
-    cookies_ok, missing_cookies, cookie_status = cookie_checker.check_cookies()
-    if not cookies_ok:
-        log_message(f"Uyarı: Cookie kontrol sorunu - {cookie_status}", "#ffcc8c")
+    try:
+        cookies_ok, missing_cookies, cookie_status = cookie_checker.check_cookies()
+        if not cookies_ok:
+            log_message(f"Uyarı: Cookie kontrol sorunu - {cookie_status}", "#ffcc8c")
+    except Exception as e:
+        log_message(f"Cookie kontrolü sırasında hata: {str(e)}", "#ffcc8c")
     
     # Load resources
-    proxies = load_proxies()
-    working_proxies = []
-    
-    if not USE_DIRECT_CONNECTION and proxies:
-        # Test proxies only if needed
-        working_proxies = get_working_proxies(proxies)
-        if not working_proxies:
-            log_message("Çalışan proxy bulunamadı. Doğrudan bağlantıya geçiliyor.", "#ffcc8c")
-            USE_DIRECT_CONNECTION = True
-    
-    user_agents = load_user_agents()
-    keywords = load_keywords()
-    cookies = load_cookies()
-    
-    # Log resources
-    log_message(f"Kullanılabilir proxy sayısı: {len(working_proxies)}")
-    log_message(f"Kullanılabilir user agent sayısı: {len(user_agents)}")
-    log_message(f"Kullanılabilir anahtar kelime sayısı: {len(keywords)}")
-    log_message(f"Kullanılabilir cookie sayısı: {len(cookies)}")
+    try:
+        proxies = load_proxies()
+        working_proxies = []
+        
+        if not USE_DIRECT_CONNECTION and proxies:
+            # Test proxies only if needed
+            working_proxies = get_working_proxies(proxies)
+            if not working_proxies:
+                log_message("Çalışan proxy bulunamadı. Doğrudan bağlantıya geçiliyor.", "#ffcc8c")
+                USE_DIRECT_CONNECTION = True
+        
+        user_agents = load_user_agents()
+        keywords = load_keywords()
+        cookies = load_cookies()
+        
+        # Log resources
+        log_message(f"Kullanılabilir proxy sayısı: {len(working_proxies)}")
+        log_message(f"Kullanılabilir user agent sayısı: {len(user_agents)}")
+        log_message(f"Kullanılabilir anahtar kelime sayısı: {len(keywords)}")
+        log_message(f"Kullanılabilir cookie sayısı: {len(cookies)}")
+    except Exception as e:
+        log_message(f"Kaynaklar yüklenirken hata: {str(e)}", "#ff8c8c")
+        # Yine de devam etmek için temel değerleri ayarla
+        proxies = []
+        working_proxies = []
+        user_agents = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"]
+        keywords = ["web sitesi"]
+        cookies = {}
     
     try:
         # Make requests
@@ -647,20 +661,28 @@ def run_test(settings):
             # Select a random user agent
             user_agent = random.choice(user_agents) if user_agents else None
             
-            # Make the request with retry
-            result = make_request_with_retry(working_proxies, user_agent, cookies, keywords, i+1, REQUEST_COUNT)
-            
-            if result['success']:
-                successful_requests += 1
+            try:
+                # Make the request with retry
+                result = make_request_with_retry(working_proxies, user_agent, cookies, keywords, i+1, REQUEST_COUNT)
+                
+                if result['success']:
+                    successful_requests += 1
+            except Exception as e:
+                log_message(f"İstek #{i+1} sırasında hata: {str(e)}", "#ff8c8c")
+                continue
             
             # Add delay between requests
             if i < REQUEST_COUNT - 1 and not stop_event.is_set():
-                req_delay = user_behavior.get_random_click_type()
-                log_message(f"Sonraki istek için {req_delay:.2f} saniye bekleniyor...")
-                for _ in range(int(req_delay)):
-                    if stop_event.is_set():
-                        break
-                    time.sleep(1)
+                try:
+                    req_delay = user_behavior.get_random_click_type()
+                    log_message(f"Sonraki istek için {req_delay:.2f} saniye bekleniyor...")
+                    for _ in range(int(req_delay)):
+                        if stop_event.is_set():
+                            break
+                        time.sleep(1)
+                except Exception as e:
+                    log_message(f"Bekleme sırasında hata: {str(e)}", "#ffcc8c")
+                    time.sleep(3)  # Fallback delay
         
         # Calculate success rate
         success_rate = (successful_requests / REQUEST_COUNT) * 100 if REQUEST_COUNT > 0 else 0
@@ -670,32 +692,44 @@ def run_test(settings):
         log_message(f"Test tamamlandı! {successful_requests}/{REQUEST_COUNT} başarılı istek, Başarı oranı: {success_rate:.2f}%", "#8cffa0")
         
         # Record analytics
-        analytics.log_summary({
-            'test_duration': test_duration,
-            'successful_requests': successful_requests,
-            'failed_requests': REQUEST_COUNT - successful_requests,
-            'success_rate': success_rate
-        })
+        try:
+            analytics.log_summary({
+                'test_duration': test_duration,
+                'successful_requests': successful_requests,
+                'failed_requests': REQUEST_COUNT - successful_requests,
+                'success_rate': success_rate
+            })
+        except Exception as e:
+            log_message(f"Analitik verisi kaydedilirken hata: {str(e)}", "#ffcc8c")
         
         # Notify frontend
-        socketio.emit('test_completed', {
-            'total_requests': REQUEST_COUNT,
-            'successful_requests': successful_requests,
-            'failed_requests': REQUEST_COUNT - successful_requests,
-            'success_rate': success_rate
-        })
-        
-        # Debug message
-        print(f"[DEBUG] Test completed - emitted test_completed event: {successful_requests}/{REQUEST_COUNT} successful")
+        try:
+            socketio.emit('test_completed', {
+                'total_requests': REQUEST_COUNT,
+                'successful_requests': successful_requests,
+                'failed_requests': REQUEST_COUNT - successful_requests,
+                'success_rate': success_rate
+            })
+            
+            # Debug message
+            print(f"[DEBUG] Test completed - emitted test_completed event: {successful_requests}/{REQUEST_COUNT} successful")
+        except Exception as e:
+            log_message(f"Sonuç gönderilirken hata: {str(e)}", "#ffcc8c")
+            print(f"[ERROR] Failed to emit test completion: {e}")
     
     except Exception as e:
-        log_message(f"Test sırasında hata oluştu: {e}", "#ff8c8c")
-        socketio.emit('test_completed', {
-            'total_requests': REQUEST_COUNT,
-            'successful_requests': successful_requests,
-            'failed_requests': REQUEST_COUNT - successful_requests,
-            'success_rate': 0
-        })
+        error_msg = str(e)
+        log_message(f"Test sırasında hata oluştu: {error_msg}", "#ff8c8c")
+        
+        try:
+            socketio.emit('test_completed', {
+                'total_requests': REQUEST_COUNT,
+                'successful_requests': successful_requests,
+                'failed_requests': REQUEST_COUNT - successful_requests,
+                'success_rate': 0
+            })
+        except:
+            print(f"[ERROR] Fatal error during test: {error_msg}")
     
     return successful_requests
 

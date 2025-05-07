@@ -2,7 +2,7 @@
 import os
 import random
 import time
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, urlparse, parse_qs
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -42,6 +42,38 @@ class GoogleSearch:
         except Exception as e:
             self.logger(f"Domain çıkarma hatası: {e}", "#ff8c8c")
             return None
+    
+    def normalize_domain(self, url):
+        """Normalize domain for comparison."""
+        if not url:
+            return ""
+        
+        try:
+            domain = self._extract_domain(url)
+            if not domain:
+                return ""
+            
+            # Remove www. prefix if exists
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            
+            return domain.lower()
+        except Exception as e:
+            self.logger(f"Domain normalizasyon hatası: {e}", "#ff8c8c")
+            return ""
+    
+    def extract_url_from_google_redirect(self, href):
+        """Extract the actual URL from a Google redirect URL."""
+        try:
+            if href.startswith('/url?'):
+                # Parse query parameters
+                query = parse_qs(urlparse(href).query)
+                if 'q' in query and query['q']:
+                    return query['q'][0]  # Return the first 'q' parameter
+            return href
+        except Exception as e:
+            self.logger(f"Google yönlendirme URL'si ayrıştırma hatası: {e}", "#ff8c8c")
+            return href
     
     def get_delay(self, base_delay):
         """Get a randomized delay if randomize_delays is enabled."""
@@ -100,6 +132,12 @@ class GoogleSearch:
             
             self.logger(f"Google araması yapılıyor: '{keyword}'", "#8cffa0")
             
+            # Render.com'da çalıştırılırken, Google'ın rate limit korumasını aşmak için 
+            # ekstra bekleme süresi ekleyelim
+            wait_time = random.uniform(3, 8)  # 3-8 saniye arası rastgele bir süre bekle
+            self.logger(f"Google araması öncesi {wait_time:.2f} saniye bekleniyor...", "#ffcc8c")
+            time.sleep(wait_time)
+            
             try:
                 timeout_val = self.timeout
                 if self.randomize_delays:
@@ -122,6 +160,12 @@ class GoogleSearch:
                 
                 # Check for proxy errors - catch HTTP errors
                 if response.status_code >= 400:
+                    # Rate limit hatası (429) için özel işleme
+                    if response.status_code == 429:
+                        self.logger(f"Google rate limit koruması (HTTP 429). 10-15 saniye bekleniyor...", "#ffcc8c")
+                        time.sleep(random.uniform(10, 15))  # 10-15 saniye bekle
+                        return False, None
+                    
                     self.logger(f"Google arama hatası: HTTP {response.status_code}", "#ff8c8c")
                     return False, None
                 
