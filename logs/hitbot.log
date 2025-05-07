@@ -43,3 +43,15 @@
 2025-05-08 00:14:16,099 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 5.45s - Success: False - Error: Google araması başarısız oldu
 2025-05-08 00:14:20,305 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 4.20s - Success: False - Error: Google araması başarısız oldu
 2025-05-08 00:14:23,542 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 3.23s - Success: False - Error: Google araması başarısız oldu
+2025-05-08 01:42:27,964 - hitbot - INFO - Logging başlatıldı
+2025-05-08 01:42:27,974 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.00s - Success: False - Error: 'NoneType' object has no attribute 'split'
+2025-05-08 01:42:30,993 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.00s - Success: False - Error: 'NoneType' object has no attribute 'split'
+2025-05-08 01:42:34,002 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.00s - Success: False - Error: 'NoneType' object has no attribute 'split'
+2025-05-08 01:42:37,016 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.00s - Success: False - Error: 'NoneType' object has no attribute 'split'
+2025-05-08 01:42:40,028 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.00s - Success: False - Error: 'NoneType' object has no attribute 'split'
+2025-05-08 01:42:43,045 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.00s - Success: False - Error: 'NoneType' object has no attribute 'split'
+2025-05-08 01:42:46,067 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.00s - Success: False - Error: 'NoneType' object has no attribute 'split'
+2025-05-08 01:42:49,094 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.00s - Success: False - Error: 'NoneType' object has no attribute 'split'
+2025-05-08 01:42:52,103 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.00s - Success: False - Error: 'NoneType' object has no attribute 'split'
+2025-05-08 01:42:55,159 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.04s - Success: False - Error: 'NoneType' object has no attribute 'split'
+2025-05-08 01:42:55,443 - hitbot - INFO - Test Summary - Duration: 27.46s - Success: 0/10 (0.00%)
