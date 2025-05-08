@@ -23,6 +23,7 @@ from profiles import UserProfile
 from analytics import Analytics
 from cookie_checker import CookieChecker
 from scheduler import HitScheduler
+from selenium_manager import SeleniumManager
 
 # Initialize Flask and SocketIO
 app = Flask(__name__)
@@ -70,6 +71,7 @@ user_profile = UserProfile(logger_func=log_message)
 analytics = Analytics(logger_func=log_message)
 cookie_checker = CookieChecker(logger_func=log_message)
 scheduler = HitScheduler(run_func=None, logger_func=log_message)  # run_func will be set later
+selenium_manager = SeleniumManager(logger_func=log_message)
 
 @app.route('/')
 def index():
@@ -111,6 +113,13 @@ def handle_connect():
             })
         except Exception as e:
             log_message(f"Zamanlayıcı bilgisi gönderilirken hata: {e}", "#ffcc8c")
+            
+        # Send selenium settings
+        try:
+            selenium_config = selenium_manager.get_config()
+            socketio.emit('selenium_settings', selenium_config)
+        except Exception as e:
+            log_message(f"Selenium ayarları gönderilirken hata: {e}", "#ffcc8c")
             
     except Exception as e:
         log_message(f"Bağlantı sırasında beklenmeyen hata: {e}", "#ff8c8c")
@@ -597,6 +606,36 @@ def run_test(settings):
     if 'simulate_user_behavior' in settings:
         SIMULATE_USER_BEHAVIOR = settings['simulate_user_behavior']
     
+    # Selenium testi kullanılacak mı kontrol et
+    use_selenium = False
+    selenium_settings = None
+    
+    if 'use_selenium' in settings and settings['use_selenium']:
+        use_selenium = True
+        if 'selenium_settings' in settings:
+            selenium_settings = settings['selenium_settings']
+            log_message(f"Selenium ayarları alındı: {selenium_settings}", "#8cffa0")
+    
+    # Eğer Selenium kullanılacaksa, doğrudan Selenium Manager'ı kullan
+    if use_selenium:
+        log_message(f"Selenium tarayıcı ziyaretleri başlatılıyor: {REQUEST_COUNT} istek", "#8cffa0")
+        
+        # İlk olarak ayarları güncelle
+        if selenium_settings:
+            selenium_manager.save_config(selenium_settings)
+        
+        # Proxyler varsa yükle
+        proxy_list = load_proxies() if not USE_DIRECT_CONNECTION else None
+        
+        # Ziyaretleri başlat
+        target_url = TARGET_URL
+        if not target_url.startswith('http'):
+            target_url = f"https://{target_url}"
+            
+        selenium_manager.start_visits(target_url, REQUEST_COUNT, proxy_list)
+        return
+    
+    # Normal istek testi için devam eden kodlar
     # Set settings to GoogleSearch module
     google_search.target_url = TARGET_URL
     google_search.search_delay = SEARCH_DELAY
@@ -792,6 +831,11 @@ def handle_stop_test():
     
     log_message("Test durduruluyor...", "#ffcc8c")
     stop_event.set()
+    
+    # Selenium testlerini de durdur
+    if selenium_manager.running:
+        selenium_manager.stop_visits()
+        log_message("Selenium tarayıcı testleri durduruldu", "#ffcc8c")
 
 @socketio.on('get_proxies')
 def handle_get_proxies():
@@ -1186,6 +1230,40 @@ def handle_remove_external_referrer(data):
     
     # Güncellenmiş listeyi gönder
     handle_get_behavior_settings()
+
+@socketio.on('save_selenium_settings')
+def handle_save_selenium_settings(data):
+    """Save selenium settings"""
+    try:
+        # Loglama
+        log_message(f"Selenium ayarları güncelleniyor: {data}", "#8cffa0")
+        
+        # Doğrulama
+        if 'use_selenium' not in data:
+            data['use_selenium'] = False
+        
+        # Min/max değerleri kontrol et
+        if 'min_time_on_site' in data and 'max_time_on_site' in data:
+            min_time = int(data['min_time_on_site'])
+            max_time = int(data['max_time_on_site'])
+            
+            if min_time > max_time:
+                log_message("Hata: Minimum ziyaret süresi maksimumdan büyük olamaz!", "#ff8c8c")
+                return
+        
+        # Ayarları kaydet
+        success = selenium_manager.save_config(data)
+        
+        if success:
+            # Ayarları geri gönder
+            selenium_config = selenium_manager.get_config()
+            socketio.emit('selenium_settings', selenium_config)
+            log_message("Selenium ayarları başarıyla kaydedildi", "#8cffa0")
+        else:
+            log_message("Selenium ayarları kaydedilirken hata oluştu", "#ff8c8c")
+            
+    except Exception as e:
+        log_message(f"Selenium ayarları kaydedilirken hata: {e}", "#ff8c8c")
 
 # CORS ayarlarını ekleyelim
 @app.after_request

@@ -130,7 +130,8 @@
         </div>
 
         <div class="row">
-            <div class="col-md-5">
+            <!-- Sekme ve içerik alanını tam genişliğe çeviriyorum -->
+            <div class="col-md-12">
                 <ul class="nav nav-tabs" id="myTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="true">Temel Ayarlar</button>
@@ -155,6 +156,9 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="behavior-tab" data-bs-toggle="tab" data-bs-target="#behavior" type="button" role="tab" aria-controls="behavior" aria-selected="false">Davranış</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="selenium-tab" data-bs-toggle="tab" data-bs-target="#selenium" type="button" role="tab" aria-controls="selenium" aria-selected="false">Selenium</button>
                     </li>
                 </ul>
                 
@@ -460,6 +464,93 @@
                             <button class="btn btn-primary" id="saveBehaviorSettingsBtn" type="button" aria-label="Davranış Ayarlarını Kaydet">Davranış Ayarlarını Kaydet</button>
                         </div>
                     </div>
+                    
+                    <!-- Selenium Ayarları -->
+                    <div class="tab-pane fade" id="selenium" role="tabpanel" aria-labelledby="selenium-tab">
+                        <div class="card-body">
+                            <div class="alert alert-info mb-3">
+                                <strong>Selenium Tarayıcı Entegrasyonu</strong><br>
+                                Bu bölümde, gerçek tarayıcı ziyareti için Selenium ayarlarını yapılandırabilirsiniz.
+                                Bu mod, Google Analytics kaydı için JavaScript destekli gerçek tarayıcı ziyaretleri yapar.
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="useSelenium" name="useSelenium">
+                                <label class="form-check-label" for="useSelenium">Selenium Kullan</label>
+                                <div class="form-text">İşaretlendiğinde istekler gerçek Chrome tarayıcı üzerinden yapılır</div>
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="headlessMode" name="headlessMode">
+                                <label class="form-check-label" for="headlessMode">Arka Planda Çalıştır (Headless)</label>
+                                <div class="form-text">İşaretlendiğinde tarayıcı görünür olmadan arka planda çalışır</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="seleniumVisitDuration" class="form-label">Sitede Kalma Süresi (saniye)</label>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <input type="number" class="form-control" id="seleniumMinTimeOnSite" name="seleniumMinTimeOnSite" min="10" max="120" value="30" aria-describedby="seleniumVisitDurationHelp">
+                                        <div class="form-text">Minimum (saniye)</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="number" class="form-control" id="seleniumMaxTimeOnSite" name="seleniumMaxTimeOnSite" min="30" max="300" value="120" aria-describedby="seleniumVisitDurationHelp">
+                                        <div class="form-text">Maksimum (saniye)</div>
+                                    </div>
+                                </div>
+                                <div id="seleniumVisitDurationHelp" class="form-text">Selenium ziyaretlerinde sitede kalma süresi aralığı</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Cihaz Tipi</label>
+                                <div class="mb-2">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="seleniumDeviceType" id="deviceTypeDesktop" value="desktop" checked>
+                                        <label class="form-check-label" for="deviceTypeDesktop">Masaüstü</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="seleniumDeviceType" id="deviceTypeMobile" value="mobile">
+                                        <label class="form-check-label" for="deviceTypeMobile">Mobil</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="seleniumDeviceType" id="deviceTypeMixed" value="mixed">
+                                        <label class="form-check-label" for="deviceTypeMixed">Karışık</label>
+                                    </div>
+                                </div>
+                                <div class="form-text">Kullanılacak cihaz tipini belirler</div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <h5>Selenium Proxy Ayarları</h5>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="useSeleniumProxy" name="useSeleniumProxy">
+                                <label class="form-check-label" for="useSeleniumProxy">Proxy Kullan</label>
+                                <div class="form-text">İşaretlendiğinde Selenium tarayıcısı proxy kullanır</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="seleniumProxyType" class="form-label">Proxy Seçim Tipi</label>
+                                <select class="form-select" id="seleniumProxyType" name="seleniumProxyType">
+                                    <option value="random">Rastgele Proxy</option>
+                                    <option value="round_robin">Sırayla Proxy</option>
+                                    <option value="fixed">Sabit Proxy</option>
+                                </select>
+                                <div class="form-text">Proxylerin nasıl seçileceğini belirler</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="seleniumFixedProxy" class="form-label">Sabit Proxy (Opsiyonel)</label>
+                                <input type="text" class="form-control" id="seleniumFixedProxy" name="seleniumFixedProxy" placeholder="ip:port:kullanıcı:şifre" aria-describedby="seleniumFixedProxyHelp">
+                                <div id="seleniumFixedProxyHelp" class="form-text">Sabit proxy seçeneği için kullanılacak proxy bilgisi</div>
+                            </div>
+                            
+                            <hr>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-primary" id="saveSeleniumSettingsBtn">Selenium Ayarlarını Kaydet</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="card mt-3">
@@ -743,6 +834,20 @@
                             timeout: parseInt(timeout.value) || 10,
                             use_direct_connection: useDirectConnection.checked
                         };
+                        
+                        // Selenium ayarları varsa ekle
+                        if (useSelenium && useSelenium.checked) {
+                            config.use_selenium = true;
+                            config.selenium_settings = {
+                                headless_mode: headlessMode.checked,
+                                min_time_on_site: parseInt(seleniumMinTimeOnSite.value) || 30,
+                                max_time_on_site: parseInt(seleniumMaxTimeOnSite.value) || 120,
+                                use_proxy: useSeleniumProxy.checked,
+                                proxy_type: seleniumProxyType.value,
+                                fixed_proxy: seleniumFixedProxy.value,
+                                device_type: document.querySelector('input[name="seleniumDeviceType"]:checked').value
+                            };
+                        }
                         
                         console.log('Test başlatılıyor, gönderilen yapılandırma:', config);
                         
@@ -1308,6 +1413,76 @@
                 // Hataları önlemek için başlangıçta Socket.io bağlantısını kontrol et
                 if (!socket.connected) {
                     logMessage('Socket.io bağlantısı kuruluyor, lütfen bekleyin...', '#ffcc8c');
+                }
+                
+                // Selenium ayarları işlemleri
+                const saveSeleniumSettingsBtn = document.getElementById('saveSeleniumSettingsBtn');
+                const useSelenium = document.getElementById('useSelenium');
+                const headlessMode = document.getElementById('headlessMode');
+                const seleniumMinTimeOnSite = document.getElementById('seleniumMinTimeOnSite');
+                const seleniumMaxTimeOnSite = document.getElementById('seleniumMaxTimeOnSite');
+                const useSeleniumProxy = document.getElementById('useSeleniumProxy');
+                const seleniumProxyType = document.getElementById('seleniumProxyType');
+                const seleniumFixedProxy = document.getElementById('seleniumFixedProxy');
+                
+                // Selenium ayarlarını yükle
+                socket.on('selenium_settings', function(data) {
+                    console.log('Selenium ayarları alındı:', data);
+                    if (data && useSelenium) {
+                        useSelenium.checked = data.use_selenium || false;
+                        headlessMode.checked = data.headless_mode || false;
+                        seleniumMinTimeOnSite.value = data.min_time_on_site || 30;
+                        seleniumMaxTimeOnSite.value = data.max_time_on_site || 120;
+                        useSeleniumProxy.checked = data.use_proxy || false;
+                        
+                        if (data.proxy_type && seleniumProxyType) {
+                            seleniumProxyType.value = data.proxy_type;
+                        }
+                        
+                        if (data.fixed_proxy && seleniumFixedProxy) {
+                            seleniumFixedProxy.value = data.fixed_proxy;
+                        }
+                        
+                        // Cihaz tipi seçimi
+                        if (data.device_type) {
+                            document.querySelector(`input[name="seleniumDeviceType"][value="${data.device_type}"]`).checked = true;
+                        }
+                    }
+                });
+                
+                // Selenium ayarlarını kaydet
+                if (saveSeleniumSettingsBtn) {
+                    saveSeleniumSettingsBtn.addEventListener('click', function() {
+                        // Ayarları doğrula
+                        if (parseInt(seleniumMinTimeOnSite.value) > parseInt(seleniumMaxTimeOnSite.value)) {
+                            alert('Minimum ziyaret süresi maksimum ziyaret süresinden büyük olamaz!');
+                            return;
+                        }
+                        
+                        // Proxy tipi sabit ise ve proxy bilgisi girilmediyse uyarı ver
+                        if (useSeleniumProxy.checked && seleniumProxyType.value === 'fixed' && !seleniumFixedProxy.value) {
+                            alert('Sabit proxy seçildiğinde proxy bilgisi girilmelidir!');
+                            return;
+                        }
+                        
+                        // Seçili cihaz tipini bul
+                        const deviceType = document.querySelector('input[name="seleniumDeviceType"]:checked').value;
+                        
+                        // Ayarları gönder
+                        const settings = {
+                            use_selenium: useSelenium.checked,
+                            headless_mode: headlessMode.checked,
+                            min_time_on_site: parseInt(seleniumMinTimeOnSite.value),
+                            max_time_on_site: parseInt(seleniumMaxTimeOnSite.value),
+                            use_proxy: useSeleniumProxy.checked,
+                            proxy_type: seleniumProxyType.value,
+                            fixed_proxy: seleniumFixedProxy.value,
+                            device_type: deviceType
+                        };
+                        
+                        socket.emit('save_selenium_settings', settings);
+                        logMessage('Selenium ayarları kaydedildi.', '#8cffa0');
+                    });
                 }
                 
             } catch (e) {

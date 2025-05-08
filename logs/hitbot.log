@@ -55,3 +55,11 @@
 2025-05-08 01:42:52,103 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.00s - Success: False - Error: 'NoneType' object has no attribute 'split'
 2025-05-08 01:42:55,159 - hitbot - ERROR - Request: 101firsat.com - Status: None - Time: 0.04s - Success: False - Error: 'NoneType' object has no attribute 'split'
 2025-05-08 01:42:55,443 - hitbot - INFO - Test Summary - Duration: 27.46s - Success: 0/10 (0.00%)
+2025-05-08 02:05:30,463 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 4.22s - Success: False - Error: Google araması başarısız oldu
+2025-05-08 02:05:37,852 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 7.37s - Success: False - Error: Google araması başarısız oldu
+2025-05-08 02:05:41,963 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 4.10s - Success: False - Error: Google araması başarısız oldu
+2025-05-08 02:36:27,142 - hitbot - INFO - Logging başlatıldı
+2025-05-08 02:43:02,337 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 20.57s - Success: False - Error: Google araması başarısız oldu
+2025-05-08 02:43:29,515 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 27.16s - Success: False - Error: Google araması başarısız oldu
+2025-05-08 02:43:52,411 - hitbot - ERROR - Request: https://101firsat.com - Status: None - Time: 22.88s - Success: False - Error: Google araması başarısız oldu
+2025-05-08 02:43:52,433 - hitbot - INFO - Test Summary - Duration: 81.01s - Success: 0/10 (0.00%)

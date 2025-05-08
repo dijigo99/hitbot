@@ -1,0 +1,1 @@
+{"headless_mode": false, "min_time_on_site": 20, "max_time_on_site": 120, "use_proxy": true, "proxy_type": "round_robin", "fixed_proxy": "", "device_type": "mixed"}
